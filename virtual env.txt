@@ -1,0 +1,1 @@
+& "c:/xampp/htdocs/major project/venv/Scripts/Activate.ps1"

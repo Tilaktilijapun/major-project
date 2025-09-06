@@ -1,0 +1,22 @@
+# Add to docker-compose.yml
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: aivivid_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - aivivid_network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: aivivid_grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - aivivid_network

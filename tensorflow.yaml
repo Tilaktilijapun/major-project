@@ -1,0 +1,143 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tensorflow-config
+  namespace: aivivid
+data:
+  model_config.pbtxt: |
+    model_config_list {
+      config {
+        name: 'threats-detection'
+        base_path: '/models/threats-detection'
+        model_platform: 'tensorflow'
+        model_version_policy {
+          latest {
+            num_versions: 2
+          }
+        }
+      }
+      config {
+        name: 'anomaly_detection'
+        base_path: '/models/anomaly_detection'
+        model_platform: 'tensorflow'
+        model_version_policy {
+          latest {
+            num_versions: 1
+          }
+        }
+      }
+      config {
+        name: 'malware_classifier'
+        base_path: '/models/malware_classifier'
+        model_platform: 'tensorflow'
+        model_version_policy {
+          latest {
+            num_versions: 1
+          }
+        }
+      }
+    }
+  
+  training_config.yaml: |
+    # TensorFlow Training Configuration
+    model_params:
+      threats-detection:
+        input_shape: [None, 100]  # Feature vector size
+        hidden_layers: [128, 64, 32]
+        output_classes: 5  # Number of threat types
+        activation: 'relu'
+        dropout_rate: 0.3
+        learning_rate: 0.001
+        batch_size: 32
+        epochs: 100
+        
+      anomaly_detection:
+        input_shape: [None, 50]
+        encoder_dims: [32, 16, 8]
+        decoder_dims: [16, 32, 50]
+        activation: 'relu'
+        learning_rate: 0.0001
+        batch_size: 64
+        epochs: 150
+        
+      malware_classifier:
+        input_shape: [None, 200]
+        conv_layers:
+          - filters: 32
+            kernel_size: 3
+            activation: 'relu'
+          - filters: 64
+            kernel_size: 3
+            activation: 'relu'
+        dense_layers: [128, 64]
+        output_classes: 10
+        learning_rate: 0.001
+        batch_size: 16
+        epochs: 80
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tensorflow-serving
+  namespace: aivivid
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tensorflow-serving
+  template:
+    metadata:
+      labels:
+        app: tensorflow-serving
+    spec:
+      containers:
+      - name: tensorflow-serving
+        image: tensorflow/serving:latest
+        ports:
+        - containerPort: 8501
+          name: rest-api
+        - containerPort: 8500
+          name: grpc-api
+        env:
+        - name: MODEL_CONFIG_FILE
+          value: "/config/model_config.pbtxt"
+        - name: MONITORING_CONFIG_FILE
+          value: "/config/monitoring_config.txt"
+        volumeMounts:
+        - name: model-storage
+          mountPath: /models
+        - name: config-volume
+          mountPath: /config
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: ml-models-pvc
+      - name: config-volume
+        configMap:
+          name: tensorflow-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tensorflow-serving-service
+  namespace: aivivid
+spec:
+  selector:
+    app: tensorflow-serving
+  ports:
+  - name: rest-api
+    port: 8501
+    targetPort: 8501
+  - name: grpc-api
+    port: 8500
+    targetPort: 8500
+  type: LoadBalancer

@@ -1,0 +1,40 @@
+2025-05-19 18:44:10,282 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 1
+2025-05-19 18:44:10,282 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 2
+2025-05-19 18:44:10,283 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 3
+2025-05-19 18:44:10,283 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 4
+2025-05-19 18:44:10,283 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 5
+2025-05-19 18:44:10,335 - database - ERROR - Error creating connection pool: connection to server at "localhost" (::1), port 5432 failed: FATAL:  password authentication failed for user "tilak"
+
+2025-05-19 18:47:31,596 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 1
+2025-05-19 18:47:31,596 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 2
+2025-05-19 18:47:31,596 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 3
+2025-05-19 18:47:31,597 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 4
+2025-05-19 18:47:31,597 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 5
+2025-05-19 18:47:31,655 - database - ERROR - Error creating connection pool: connection to server at "localhost" (::1), port 5432 failed: FATAL:  password authentication failed for user "tilak"
+
+2025-05-19 18:48:36,321 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 1
+2025-05-19 18:48:36,321 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 2
+2025-05-19 18:48:36,322 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 3
+2025-05-19 18:48:36,322 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 4
+2025-05-19 18:48:36,322 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 5
+2025-05-19 18:48:36,325 - database - ERROR - Error creating connection pool: could not translate host name "localhost:5000" to address: Name or service not known
+
+2025-05-23 10:16:49,372 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 1
+2025-05-23 10:16:49,372 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 2
+2025-05-23 10:16:49,372 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 3
+2025-05-23 10:16:49,372 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 4
+2025-05-23 10:16:49,372 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 5
+2025-05-23 10:16:49,434 - database - INFO - Database connection pool created successfully
+2025-05-23 10:16:49,435 - database - INFO - Acquired connection from pool
+2025-05-23 10:16:49,440 - database - INFO - Released connection back to pool
+2025-05-23 10:16:49,440 - database - INFO - Acquired connection from pool
+2025-05-23 10:16:49,440 - database - INFO - Released connection back to pool
+2025-05-23 10:16:49,440 - database - INFO - Acquired connection from pool
+2025-05-23 10:16:49,441 - database - INFO - Released connection back to pool
+2025-05-23 10:16:49,441 - database - INFO - Tables created successfully
+2025-05-23 10:16:49,441 - database - INFO - Acquired connection from pool
+2025-05-23 10:16:49,441 - database - INFO - Released connection back to pool
+2025-05-23 10:16:49,441 - database - INFO - All connections closed
+2025-05-23 10:16:49,444 - database - ERROR - Error getting connection from pool: connection pool is closed
+2025-05-23 10:16:49,444 - database - ERROR - Query execution error: connection pool is closed
+2025-05-23 10:16:49,444 - database - ERROR - Error creating tables: connection pool is closed

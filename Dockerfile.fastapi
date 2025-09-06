@@ -1,0 +1,41 @@
+# Optimized FastAPI Dockerfile with caching
+FROM python:3.9-slim as base
+
+# Install system dependencies in separate layer
+RUN apt-get update && apt-get install -y \
+    gcc g++ libpq-dev curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create requirements layer for better caching
+FROM base as requirements
+COPY requirements-fastapi.txt .
+RUN pip install --no-cache-dir -r requirements-fastapi.txt
+
+# ML dependencies in separate layer
+FROM requirements as ml-deps
+RUN pip install --no-cache-dir \
+    tensorflow==2.13.0 \
+    scikit-learn==1.3.0 \
+    numpy==1.24.3 \
+    pandas==1.5.3
+
+# Monitoring dependencies in separate layer
+FROM ml-deps as monitoring
+RUN pip install --no-cache-dir \
+    prometheus_client \
+    psutil \
+    docker
+
+# Final application layer
+FROM monitoring as app
+WORKDIR /app
+COPY . .
+
+# Expose FastAPI and Prometheus metrics ports
+EXPOSE 8000
+EXPOSE 9091
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+
+CMD ["uvicorn", "fastapi_app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
