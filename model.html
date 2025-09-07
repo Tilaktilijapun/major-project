@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AIVivid - Model</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#1E40AF',
+            dark: '#0F172A',
+            accent: '#a3c614',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .nav-item {
+      transition: all 0.3s ease;
+    }
+    .nav-item:hover {
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+    .nav-item.active {
+      background-color: rgba(59, 130, 246, 0.1);
+      border-left: 3px solid #3B82F6;
+      color: white !important;
+    }
+    .model-card {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.5s ease;
+    }
+    .model-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .model-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #1F2A44 25%, #2D3A55 50%, #1F2A44 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+    }
+    @keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .log-entry {
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    .log-entry.visible {
+      opacity: 1;
+    }
+    .log-entry:hover {
+      background-color: #1F2A44;
+      border-radius: 0.5rem;
+    }
+    .action-button {
+      transition: all 0.3s ease;
+    }
+    .action-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+    }
+    .action-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .curved-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+    .progress-bar {
+      background: linear-gradient(90deg, #EF4444, #FBBF24, #22C55E);
+    }
+    #model-canvas {
+      width: 300px;
+      height: 300px;
+    }
+    .tab-button {
+      transition: all 0.3s ease;
+    }
+    .tab-button.active {
+      border-bottom: 2px solid #3B82F6;
+      color: #3B82F6;
+    }
+  </style>
+</head>
+<body class="bg-dark text-white font-sans">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-64 bg-dark border-r border-gray-800">
+      <div class="p-6">
+        <div class="flex items-center">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="AIVivid Logo" class="h-8 w-auto">
+          <span class="ml-2 text-xl font-bold text-accent">AIVivid</span>
+        </div>
+      </div>
+      <nav class="mt-6 flex flex-col h-[calc(100%-80px)]">
+        <div class="px-4 space-y-2 flex-grow">
+          <a href="{{ url_for('user_dashboard.user_dashboard') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+            Dashboard
+          </a>
+          <a href="{{ url_for('security_scan.security_scan_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            </svg>
+            Security Scan
+          </a>
+          <a href="{{ url_for('alerts.user_security_alerts') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.072 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+            Security Alerts
+          </a>
+          <a href="{{ url_for('security_recommendations.recommendations_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2l4 -4M12 22C7.03 20.94 4 16.5 4 12V6l8-4l8 4v6c0 4.5-3 8.94-8 10z"/>
+            </svg>
+            Security Recommendations
+          </a>
+          <a href="{{ url_for('ml_features.ml_features_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9h6v6H9V9zM4 4v4m0 8v4m4 4h4m8-4v-4m0-8V4m-4-4h-4M4 12H2m20 0h-2M12 4V2m0 20v-2" />
+            </svg>
+            ML Features
+          </a>
+          <a href="{{ url_for('threat.threat_details_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            Threat Details
+          </a>
+          <a href="{{ url_for('model.model_page') }}" class="nav-item active flex items-center px-4 py-3 text-white bg-[#1E40AF] hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 16v-2m8-6h2M2 12H4m14.828-5.172l1.414 1.414M4.757 19.243l1.414-1.414M19.243 19.243l-1.414-1.414M4.757 4.757L6.172 6.17M9 12a3 3 0 006 0 3 3 0 00-6 0z"/>
+            </svg>
+            Model
+          </a>
+          <a href="{{ url_for('monitoring.monitoring_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 014-4h3m-7 6v2m0 0a2 2 0 01-2 2H6a2 2 0 01-2-2v-2a2 2 0 012-2h1m6-6V7a2 2 0 012-2h2a2 2 0 012 2v2"/>
+            </svg>
+            Monitoring
+          </a>
+          <a href="{{ url_for('blog.blog_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h7l2 2h5a2 2 0 012 2v12a2 2 0 01-2 2z"/>
+            </svg>
+            Blog
+          </a>
+        </div>
+        <div class="px-4 pb-4">
+          <a href="{{ url_for('index') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Return to Home
+          </a>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-auto relative">
+      <svg class="curved-bg" viewBox="0 0 1440 320">
+        <path fill="rgba(59, 130, 246, 0.1)" d="M0,160L48,138.7C96,117,192,75,288,69.3C384,64,480,96,576,122.7C672,149,768,171,864,160C960,149,1056,107,1152,85.3C1248,64,1344,64,1392,64L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+      </svg>
+      
+      <!-- Header -->
+      <header class="bg-dark border-b border-gray-800 p-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+          <div class="flex items-center">
+            <a href="{{ url_for('user_dashboard.user_dashboard') }}" class="text-gray-400 hover:text-white mr-4">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </a>
+            <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">Model Management</h1>
+          </div>
+          <div class="flex space-x-4">
+            <button id="predict-threat" class="action-button bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Predict
+            </button>
+            <button id="update-threshold" class="action-button bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md flex items-center">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Update Threshold
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="max-w-7xl mx-auto p-6 space-y-6">
+        <!-- Model Tabs -->
+        <div class="flex space-x-4 border-b border-gray-800">
+          <button class="tab-button pb-2 px-4 text-gray-400 hover:text-white active" data-tab="device">Device Model</button>
+          <button class="tab-button pb-2 px-4 text-gray-400 hover:text-white" data-tab="threat">Threat Model</button>
+        </div>
+
+        <!-- Device Model Section -->
+        <div id="device-model" class="tab-content">
+          <h2 class="text-xl font-bold mb-4">Device Model</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="model-card bg-gray-800 p-4 rounded-lg shadow">
+              <p class="text-sm text-gray-400">Model Name</p>
+              <h2 id="device-name" class="text-xl font-bold text-accent skeleton w-24 h-6 rounded">--</h2>
+            </div>
+            <div class="model-card bg-gray-800 p-4 rounded-lg shadow">
+              <p class="text-sm text-gray-400">Accuracy</p>
+              <h2 id="device-accuracy" class="text-xl font-bold text-green-400 skeleton w-12 h-6 rounded">--</h2>
+            </div>
+            <div class="model-card bg-gray-800 p-4 rounded-lg shadow">
+              <p class="text-sm text-gray-400">Status</p>
+              <h2 id="device-status" class="text-xl font-bold skeleton w-32 h-6 rounded">--</h2>
+            </div>
+            <div class="model-card bg-gray-800 p-4 rounded-lg shadow">
+              <p class="text-sm text-gray-400">Training Samples</p>
+              <h2 id="device-samples" class="text-xl font-bold text-blue-400 skeleton w-20 h-6 rounded">--</h2>
+            </div>
+          </div>
+        </div>
+
+        <!-- Threat Model Section -->
+        <div id="threat-model" class="tab-content hidden">
+          <h2 class="text-xl font-bold mb-4">Threat Model</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="model-card bg-gray-800 p-4 rounded-lg shadow">
+              <p class="text-sm text-gray-400">Model Name</p>
+              <h2 id="threat-name" class="text-xl font-bold text-accent skeleton w-24 h-6 rounded">--</h2>
+            </div>
+            <div class="model-card bg-gray-800 p-4 rounded-lg shadow">
+              <p class="text-sm text-gray-400">Accuracy</p>
+              <h2 id="threat-accuracy" class="text-xl font-bold text-green-400 skeleton w-12 h-6 rounded">--</h2>
+            </div>
+            <div class="model-card bg-gray-800 p-4 rounded-lg shadow">
+              <p class="text-sm text-gray-400">Status</p>
+              <h2 id="threat-status" class="text-xl font-bold skeleton w-32 h-6 rounded">--</h2>
+            </div>
+            <div class="model-card bg-gray-800 p-4 rounded-lg shadow">
+              <p class="text-sm text-gray-400">Training Samples</p>
+              <h2 id="threat-samples" class="text-xl font-bold text-blue-400 skeleton w-20 h-6 rounded">--</h2>
+            </div>
+          </div>
+        </div>
+
+        <!-- Accuracy Comparison Chart -->
+        <div class="bg-gray-800 p-6 rounded-lg shadow model-card">
+          <h3 class="text-lg font-semibold mb-4">Model Accuracy Comparison</h3>
+          <canvas id="accuracy-chart" height="200"></canvas>
+        </div>
+
+        <!-- Prediction Visualization -->
+        <div class="bg-gray-800 p-6 rounded-lg shadow model-card">
+          <h3 class="text-lg font-semibold mb-4">Prediction Confidence</h3>
+          <div class="w-full bg-gray-700 rounded-full h-4">
+            <div id="confidence-bar" class="progress-bar h-4 rounded-full" style="width: 0%"></div>
+          </div>
+          <p id="confidence-text" class="text-sm text-gray-400 mt-2">No prediction yet</p>
+        </div>
+
+        <!-- Model Visualization (Canvas) -->
+        <div class="bg-gray-800 p-6 rounded-lg shadow model-card">
+          <h3 class="text-lg font-semibold mb-4">Model Visualization</h3>
+          <div class="flex justify-center">
+            <canvas id="model-canvas" width="300" height="300"></canvas>
+          </div>
+        </div>
+
+        <!-- Activity Logs -->
+        <div class="bg-gray-800 p-6 rounded-lg shadow model-card">
+          <h3 class="text-lg font-semibold mb-4">Activity Logs</h3>
+          <div id="model-log" class="space-y-2 text-sm text-gray-300 max-h-96 overflow-y-auto">
+            <div class="skeleton w-full h-6 rounded"></div>
+            <div class="skeleton w-full h-6 rounded"></div>
+          </div>
+        </div>
+
+        <!-- Predict Threat Modal -->
+        <div id="predict-threat-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div class="bg-gray-800 rounded-lg p-6 max-w-lg w-full mx-4">
+            <h2 class="text-xl font-semibold mb-4">Predict Threat</h2>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Model Type</label>
+                <select id="model-type-predict" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2">
+                  <option value="device">Device</option>
+                  <option value="threat">Threat</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Packet Rate (packets/s)</label>
+                <input id="packet-rate" type="number" step="0.01" min="0" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2" placeholder="e.g., 100.5" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Byte Rate (bytes/s)</label>
+                <input id="byte-rate" type="number" step="0.01" min="0" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2" placeholder="e.g., 1024.0" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Packet Size (bytes)</label>
+                <input id="packet-size" type="number" step="0.01" min="0" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2" placeholder="e.g., 512.0" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Protocol Type (encoded)</label>
+                <input id="protocol-type" type="number" step="0.01" min="0" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2" placeholder="e.g., 1.0 (TCP)" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Device ID (Optional)</label>
+                <input id="device-id" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2" placeholder="e.g., device_001" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Sequence Data (Optional, comma-separated numbers)</label>
+                <input id="sequence-data" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2" placeholder="e.g., 1,2,3" />
+              </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-4">
+              <button onclick="closePredictModal()" class="text-gray-400 hover:text-white px-4 py-2 rounded-md text-sm font-medium">Cancel</button>
+              <button onclick="submitPrediction()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium">Predict</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Update Threshold Modal -->
+        <div id="threshold-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div class="bg-gray-800 rounded-lg p-6 max-w-lg w-full mx-4">
+            <h2 class="text-xl font-semibold mb-4">Update Detection Threshold</h2>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Model Type</label>
+                <select id="model-type-threshold" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2">
+                  <option value="device">Device</option>
+                  <option value="threat">Threat</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Threshold (0 to 1)</label>
+                <input id="threshold-value" type="number" step="0.01" min="0" max="1" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2" placeholder="e.g., 0.5" />
+              </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-4">
+              <button onclick="closeThresholdModal()" class="text-gray-400 hover:text-white px-4 py-2 rounded-md text-sm font-medium">Cancel</button>
+              <button onclick="submitThreshold()" class="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-md text-sm font-medium">Update</button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Script for Interactivity -->
+  <script>
+    // Capitalize helper
+    function capitalize(str) {
+      if (!str) return '';
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // Format ISO datetime
+    function formatTime(isoString) {
+      const date = new Date(isoString);
+      return date.toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' }).replace(',', '');
+    }
+
+    // Animate cards
+    function animateCards() {
+      const cards = document.querySelectorAll('.model-card');
+      cards.forEach((card, index) => {
+        setTimeout(() => {
+          card.classList.add('visible');
+        }, index * 200);
+      });
+    }
+
+    // Update button states based on model availability
+    function updateButtonStates(enabled) {
+      const buttons = ['predict-threat', 'update-threshold'];
+      buttons.forEach(id => {
+        const button = document.getElementById(id);
+        button.disabled = !enabled;
+      });
+    }
+
+    // Fetch model info
+    async function fetchModelInfo() {
+      try {
+        const response = await fetch('/user/model/model-overview');
+        const data = await response.json();
+
+        if (response.ok) {
+          // Device
+          document.getElementById('device-name').innerText = data.device.name || 'N/A';
+          document.getElementById('device-accuracy').innerText = `${(data.device.accuracy * 100).toFixed(1)}%`;
+          document.getElementById('device-status').innerText = data.device.status || 'N/A';
+          document.getElementById('device-samples').innerText = data.device.training_samples || 'N/A';
+
+          // Threat
+          document.getElementById('threat-name').innerText = data.threat.name || 'N/A';
+          document.getElementById('threat-accuracy').innerText = `${(data.threat.accuracy * 100).toFixed(1)}%`;
+          document.getElementById('threat-status').innerText = data.threat.status || 'N/A';
+          document.getElementById('threat-samples').innerText = data.threat.training_samples || 'N/A';
+
+          // Remove skeletons
+          ['device-name', 'device-accuracy', 'device-status', 'device-samples', 'threat-name', 'threat-accuracy', 'threat-status', 'threat-samples'].forEach(id => {
+            document.getElementById(id).classList.remove('skeleton');
+          });
+
+          // Enable buttons
+          updateButtonStates(true);
+
+          // Update logs
+          const log = document.getElementById('model-log');
+          log.innerHTML = '';
+          const logs = [
+            { message: `Device Model ${data.device.name} loaded, Accuracy: ${(data.device.accuracy * 100).toFixed(1)}%`, time: data.device.trained_at },
+            { message: `Threat Model ${data.threat.name} loaded, Accuracy: ${(data.threat.accuracy * 100).toFixed(1)}%`, time: data.threat.trained_at }
+          ];
+          logs.forEach((entry, index) => {
+            const li = document.createElement('li');
+            li.classList.add('log-entry');
+            li.innerText = `[${formatTime(entry.time)}] ${entry.message}`;
+            log.appendChild(li);
+            setTimeout(() => li.classList.add('visible'), index * 100);
+          });
+
+          // Update accuracy chart
+          new Chart(document.getElementById('accuracy-chart'), {
+            type: 'bar',
+            data: {
+              labels: ['Device Model', 'Threat Model'],
+              datasets: [{
+                label: 'Accuracy (%)',
+                data: [(data.device.accuracy * 100).toFixed(1), (data.threat.accuracy * 100).toFixed(1)],
+                backgroundColor: ['#3B82F6', '#EF4444'],
+                borderColor: ['#3B82F6', '#EF4444'],
+                borderWidth: 1
+              }]
+            },
+            options: {
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  max: 100,
+                  ticks: { color: '#D1D5DB' },
+                  grid: { color: '#4B5563' }
+                },
+                x: {
+                  ticks: { color: '#D1D5DB' },
+                  grid: { display: false }
+                }
+              },
+              plugins: {
+                legend: { display: false }
+              }
+            }
+          });
+        } else {
+          throw new Error(data.error || 'Failed to load model data');
+        }
+      } catch (err) {
+        console.error('Error fetching model data:', err);
+        ['device', 'threat'].forEach(type => {
+          document.getElementById(`${type}-name`).innerText = 'N/A';
+          document.getElementById(`${type}-accuracy`).innerText = 'N/A';
+          document.getElementById(`${type}-status`).innerText = 'N/A';
+          document.getElementById(`${type}-samples`).innerText = 'N/A';
+          document.getElementById(`${type}-name`).classList.remove('skeleton');
+          document.getElementById(`${type}-accuracy`).classList.remove('skeleton');
+          document.getElementById(`${type}-status`).classList.remove('skeleton');
+          document.getElementById(`${type}-samples`).classList.remove('skeleton');
+        });
+        updateButtonStates(false);
+        const log = document.getElementById('model-log');
+        log.innerHTML = `<li class="log-entry visible">[${formatTime(new Date().toISOString())}] Error: ${err.message}</li>`;
+      }
+    }
+
+    // Open predict threat modal
+    function openPredictModal() {
+      document.getElementById('predict-threat-modal').classList.remove('hidden');
+    }
+
+    // Close predict threat modal
+    function closePredictModal() {
+      document.getElementById('predict-threat-modal').classList.add('hidden');
+      ['model-type-predict', 'packet-rate', 'byte-rate', 'packet-size', 'protocol-type', 'device-id', 'sequence-data'].forEach(id => {
+        if (id === 'model-type-predict') document.getElementById(id).value = 'device';
+        else document.getElementById(id).value = '';
+      });
+    }
+
+    // Submit prediction
+    async function submitPrediction() {
+      const model_type = document.getElementById('model-type-predict').value;
+      const packetRate = document.getElementById('packet-rate').value;
+      const byteRate = document.getElementById('byte-rate').value;
+      const packetSize = document.getElementById('packet-size').value;
+      const protocolType = document.getElementById('protocol-type').value;
+      const deviceId = document.getElementById('device-id').value;
+      const sequenceData = document.getElementById('sequence-data').value;
+
+      if (!packetRate || !byteRate || !packetSize || !protocolType) {
+        alert('Please fill in all required fields: Packet Rate, Byte Rate, Packet Size, Protocol Type');
+        return;
+      }
+
+      try {
+        const features = {
+          model_type,
+          packet_rate: parseFloat(packetRate),
+          byte_rate: parseFloat(byteRate),
+          packet_size: parseFloat(packetSize),
+          protocol_type: parseFloat(protocolType)
+        };
+        if (deviceId) features.device_id = deviceId;
+        if (sequenceData) {
+          const seqArray = sequenceData.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+          if (seqArray.length > 0) {
+            features.sequence_data = seqArray;
+          }
+        }
+
+        const response = await fetch('/user/model/model/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(features)
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to make prediction');
+        }
+
+        // Update confidence bar
+        const confidenceBar = document.getElementById('confidence-bar');
+        const confidenceText = document.getElementById('confidence-text');
+        confidenceBar.style.width = `${(data.confidence * 100).toFixed(1)}%`;
+        confidenceText.innerText = `Confidence: ${(data.confidence * 100).toFixed(1)}% (${data.is_threat ? 'Threat Detected' : 'No Threat'})`;
+
+        const log = document.getElementById('model-log');
+        const logEntry = document.createElement('li');
+        logEntry.classList.add('log-entry');
+        logEntry.innerText = `[${formatTime(new Date().toISOString())}] ${capitalize(model_type)} Prediction: ${data.is_threat ? 'Threat Detected' : 'No Threat'}, Confidence: ${(data.confidence * 100).toFixed(1)}%, Threat ID: ${data.threat_id}, Prediction ID: ${data.prediction_id}${deviceId ? `, Device: ${deviceId}` : ''}`;
+        log.prepend(logEntry);
+        setTimeout(() => logEntry.classList.add('visible'), 100);
+
+        alert(`${capitalize(model_type)} Prediction: ${data.is_threat ? 'Threat Detected' : 'No Threat'}\nConfidence: ${(data.confidence * 100).toFixed(1)}%\nThreat ID: ${data.threat_id}\nPrediction ID: ${data.prediction_id}`);
+        closePredictModal();
+      } catch (err) {
+        console.error('Error making prediction:', err);
+        alert('Error making prediction: ' + err.message);
+        const log = document.getElementById('model-log');
+        const errorLog = document.createElement('li');
+        errorLog.classList.add('log-entry');
+        errorLog.innerText = `[${formatTime(new Date().toISOString())}] Prediction failed: ${err.message}`;
+        log.prepend(errorLog);
+        setTimeout(() => errorLog.classList.add('visible'), 100);
+      }
+    }
+
+    // Open threshold modal
+    function openThresholdModal() {
+      document.getElementById('threshold-modal').classList.remove('hidden');
+    }
+
+    // Close threshold modal
+    function closeThresholdModal() {
+      document.getElementById('threshold-modal').classList.add('hidden');
+      document.getElementById('model-type-threshold').value = 'device';
+      document.getElementById('threshold-value').value = '';
+    }
+
+    // Submit threshold update
+    async function submitThreshold() {
+      const model_type = document.getElementById('model-type-threshold').value;
+      const threshold = document.getElementById('threshold-value').value;
+      if (!threshold || parseFloat(threshold) < 0 || parseFloat(threshold) > 1) {
+        alert('Please enter a valid threshold between 0 and 1');
+        return;
+      }
+
+      try {
+        const response = await fetch('/user/model/model/threshold', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model_type, threshold: parseFloat(threshold) })
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to update threshold');
+        }
+
+        const log = document.getElementById('model-log');
+        const logEntry = document.createElement('li');
+        logEntry.classList.add('log-entry');
+        logEntry.innerText = `[${formatTime(new Date().toISOString())}] ${capitalize(model_type)} Threshold updated to ${data.threshold}`;
+        log.prepend(logEntry);
+        setTimeout(() => logEntry.classList.add('visible'), 100);
+
+        alert(`${capitalize(model_type)} Threshold updated to ${data.threshold}`);
+        closeThresholdModal();
+      } catch (err) {
+        console.error('Error updating threshold:', err);
+        alert('Error updating threshold: ' + err.message);
+        const log = document.getElementById('model-log');
+        const errorLog = document.createElement('li');
+        errorLog.classList.add('log-entry');
+        errorLog.innerText = `[${formatTime(new Date().toISOString())}] Threshold update failed: ${err.message}`;
+        log.prepend(errorLog);
+        setTimeout(() => errorLog.classList.add('visible'), 100);
+      }
+    }
+
+    // Tab switching
+    document.querySelectorAll('.tab-button').forEach(button => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+        document.getElementById(`${button.dataset.tab}-model`).classList.remove('hidden');
+      });
+    });
+
+    // Initialize Canvas visualization
+    function initializeModelVisualization() {
+      const canvas = document.getElementById('model-canvas');
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+
+      // Define layers
+      const layers = [
+        [{ x: 50, y: 100 }, { x: 50, y: 150 }, { x: 50, y: 200 }], // Input
+        [{ x: 150, y: 80 }, { x: 150, y: 120 }, { x: 150, y: 160 }, { x: 150, y: 200 }, { x: 150, y: 240 }], // Hidden
+        [{ x: 250, y: 150 }] // Output
+      ];
+
+      let animationTime = 0;
+
+      function draw() {
+        ctx.clearRect(0, 0, width, height);
+
+        ctx.strokeStyle = '#a3c614';
+        ctx.lineWidth = 1;
+        layers.forEach((layer, i) => {
+          if (i < layers.length - 1) {
+            layer.forEach(node1 => {
+              layers[i + 1].forEach(node2 => {
+                ctx.beginPath();
+                ctx.moveTo(node1.x, node1.y);
+                ctx.lineTo(node2.x, node2.y);
+                ctx.stroke();
+              });
+            });
+          }
+        });
+
+        layers.forEach(layer => {
+          layer.forEach(node => {
+            const radius = 8 + Math.sin(animationTime + node.x + node.y) * 2;
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#3B82F6';
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.stroke();
+          });
+        });
+
+        animationTime += 0.05;
+        requestAnimationFrame(draw);
+      }
+
+      draw();
+    }
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchModelInfo();
+      animateCards();
+      initializeModelVisualization();
+      document.getElementById('predict-threat').addEventListener('click', openPredictModal);
+      document.getElementById('update-threshold').addEventListener('click', openThresholdModal);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIVivid - Contact Us</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#1E40AF',
+                        dark: '#0F172A',
+                        accent: '#a3c614',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'particle-move-1': 'particle-move-1 8s ease-in-out infinite',
+                        'particle-move-2': 'particle-move-2 12s ease-in-out infinite',
+                        'particle-move-3': 'particle-move-3 10s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' }
+                        },
+                        'particle-move-1': {
+                            '0%, 100%': { transform: 'translate(0px, 0px) scale(1) rotate(0deg)' },
+                            '25%': { transform: 'translate(15px, -15px) scale(1.2) rotate(90deg)' },
+                            '50%': { transform: 'translate(0px, -25px) scale(1) rotate(180deg)' },
+                            '75%': { transform: 'translate(-15px, -15px) scale(0.8) rotate(270deg)' }
+                        },
+                        'particle-move-2': {
+                            '0%, 100%': { transform: 'translate(0px, 0px) scale(1) rotate(0deg)' },
+                            '25%': { transform: 'translate(-20px, 15px) scale(0.8) rotate(-90deg)' },
+                            '50%': { transform: 'translate(0px, 25px) scale(1.2) rotate(-180deg)' },
+                            '75%': { transform: 'translate(20px, 15px) scale(1) rotate(-270deg)' }
+                        },
+                        'particle-move-3': {
+                            '0%, 100%': { transform: 'translate(0px, 0px) rotate(0deg) scale(1)' },
+                            '33%': { transform: 'translate(15px, 15px) rotate(120deg) scale(1.1)' },
+                            '66%': { transform: 'translate(-15px, 15px) rotate(240deg) scale(0.9)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .particle-1, .particle-2, .particle-3 {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.6;
+        }
+        .particle-1 {
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(to right, #3B82F6, #a3c614);
+            top: 20%;
+            right: 10%;
+            animation: particle-move-1 8s ease-in-out infinite;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+        }
+        .particle-2 {
+            width: 8px;
+            height: 8px;
+            background: linear-gradient(to right, #a3c614, #3B82F6);
+            bottom: 30%;
+            left: 15%;
+            animation: particle-move-2 12s ease-in-out infinite;
+            box-shadow: 0 0 8px rgba(163, 198, 20, 0.4);
+        }
+        .particle-3 {
+            width: 10px;
+            height: 10px;
+            background: linear-gradient(to right, #1E40AF, #3B82F6);
+            bottom: 10%;
+            right: 20%;
+            animation: particle-move-3 10s ease-in-out infinite;
+            box-shadow: 0 0 10px rgba(30, 64, 175, 0.4);
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script type="module" src="/static/js/auth.js"></script>
+    <script type="module" src="/static/js/api-service.js"></script>
+    <script type="module" src="/static/js/notification-manager.js"></script>
+    <script type="module" src="/static/js/websocket-handler.js"></script>
+</head>
+<body class="bg-dark text-white font-sans">
+    <!-- Navigation -->
+    <nav class="bg-dark border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <img class="h-10 w-auto" src="{{ url_for('static', filename='images/logo.png') }}" alt="AIVivid Logo">
+                        <span class="ml-2 text-2xl font-bold text-accent">AIVivid</span>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center space-x-10">
+                    <a href="{{ url_for('index') }}" class="text-gray-300 hover:text-white transition duration-150">Home</a>
+                    <a href="{{ url_for('user_dashboard.user_dashboard') }}" class="text-gray-300 hover:text-white transition duration-150">Dashboard</a>
+                    <a href="{{ url_for('pricing') }}" class="text-gray-300 hover:text-white transition duration-150">Pricing</a>
+                    <a href="{{ url_for('about') }}" class="text-gray-300 hover:text-white transition duration-150">About</a>
+                    <a href="{{ url_for('contact') }}" class="text-primary hover:text-blue-400 transition duration-150">Contact</a>
+                    <!-- Auth Buttons -->
+                    {% if not current_user.is_authenticated %}
+                    <div class="flex space-x-4">
+                        <a href="{{ url_for('auth.login') }}" class="text-primary hover:text-blue-400 transition duration-150">Login</a>
+                        <a href="{{ url_for('auth.signup') }}" class="bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-150">Sign Up</a>
+                    </div>
+                    {% else %}
+                    <!-- Logged In Dropdown -->
+                    <div class="relative" x-data="{ open: false }" @click.away="open = false">
+                        <button @click="open = !open" class="flex items-center space-x-2 focus:outline-none">
+                            <img src="{{ current_user.avatar_url or url_for('static', filename='images/user-avatar.png') }}" alt="User Avatar" class="w-8 h-8 rounded-full">
+                            <span class="text-gray-300 hover:text-white">{{ current_user.username }}</span>
+                        </button>
+                        <div x-show="open" x-transition class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                            {% if current_user.role == 'admin' %}
+                            <a href="{{ url_for('admin.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Dashboard</a>
+                            {% else %}
+                            <a href="{{ url_for('user_dashboard.user_dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Dashboard</a>
+                            {% endif %}
+                            <a href="{{ url_for('user_profile.profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</a>
+                            <div class="border-t border-gray-100"></div>
+                            <a href="{{ url_for('pricing.get_user_subscription', user_id=current_user.id) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Subscription</a>
+                            <a href="{{ url_for('auth.logout') }}" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Logout</a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative overflow-hidden">
+        <div class="absolute inset-0 z-0">
+            <div class="absolute inset-0 bg-gradient-to-r from-dark to-secondary opacity-90"></div>
+            <div class="absolute inset-0 bg-[url('../assets/images/grid-pattern.png')] opacity-20"></div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 relative z-10">
+            <div class="text-center">
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+                    Contact <span class="text-primary">AIVivid</span>
+                </h1>
+                <p class="mt-6 text-xl text-gray-300 max-w-2xl mx-auto">
+                    Reach out to our team for support, inquiries, or to learn more about our AI-powered cybersecurity solutions.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Form and Info Section -->
+    <section class="py-20 bg-dark">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+                <!-- Contact Form -->
+                <div class="relative">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-primary to-blue-400 rounded-lg blur opacity-20"></div>
+                    <div class="relative bg-dark border border-gray-800 rounded-lg p-8">
+                        <h3 class="text-2xl font-bold mb-6">Send Us a Message</h3>
+                        <div class="space-y-6">
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-gray-300">Full Name</label>
+                                <input type="text" id="name" name="name" class="mt-1 w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Your Name">
+                            </div>
+                            <div>
+                                <label for="email" class="block text-sm font-medium text-gray-300">Email Address</label>
+                                <input type="email" id="email" name="email" class="mt-1 w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Your Email">
+                            </div>
+                            <div>
+                                <label for="subject" class="block text-sm font-medium text-gray-300">Subject</label>
+                                <input type="text" id="subject" name="subject" class="mt-1 w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Subject">
+                            </div>
+                            <div>
+                                <label for="message" class="block text-sm font-medium text-gray-300">Message</label>
+                                <textarea id="message" name="message" rows="5" class="mt-1 w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Your Message"></textarea>
+                            </div>
+                            <div>
+                                <button type="submit" class="w-full bg-primary hover:bg-blue-600 text-white px-6 py-3 rounded-md text-lg font-medium transition duration-150">Send Message</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="space-y-8">
+                    <div>
+                        <h3 class="text-2xl font-bold">Contact Information</h3>
+                        <p class="mt-4 text-gray-400">Get in touch with our team directly or visit us at our office.</p>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <i class="bi bi-geo-alt text-primary text-xl mr-3"></i>
+                            <p class="text-gray-400">123 AI Security Lane, Tech City, TC 12345</p>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="bi bi-envelope text-primary text-xl mr-3"></i>
+                            <p class="text-gray-400">support@aivivid.com</p>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="bi bi-telephone text-primary text-xl mr-3"></i>
+                            <p class="text-gray-400">+1 (555) 123-4567</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-lg font-medium">Our Team</h4>
+                        <ul class="mt-4 space-y-2 text-gray-400">
+                            <li>Tilak Tilija Pun - Chief Executive Officer</li>
+                            <li>Anush Shrestha - Chief Information Security Officer</li>
+                            <li>Sandesh Baral - Chief Technology Officer</li>
+                            <li>Sankalpa Paudel - Chief Information Officer</li>
+                        </ul>
+                    </div>
+                    <div class="flex space-x-6">
+                        <a href="#" class="text-gray-400 hover:text-primary" aria-label="Facebook">
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd"/></svg>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-primary" aria-label="Twitter">
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743A11.65 11.65 0 011.938 6.7a4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"/></svg>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-primary" aria-label="LinkedIn">
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" clip-rule="evenodd"/></svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark border-t border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center">
+                        <img class="h-10 w-auto" src="{{ url_for('static', filename='images/logo.png') }}" alt="AIVivid Logo">
+                        <span class="ml-2 text-2xl font-bold text-accent">AIVivid</span>
+                    </div>
+                    <p class="mt-4 text-gray-400">
+                        Advanced AI-powered cybersecurity solutions to protect your business from evolving threats.
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Solutions</h3>
+                    <ul class="mt-4 space-y-4">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Threat Detection</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Threat Analysis</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Automated Response</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Security Consulting</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Company</h3>
+                    <ul class="mt-4 space-y-4">
+                        <li><a href="{{ url_for('about') }}" class="text-gray-400 hover:text-white">About Us</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Careers</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Blog</a></li>
+                        <li><a href="{{ url_for('contact') }}" class="text-gray-400 hover:text-white">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Legal</h3>
+                    <ul class="mt-4 space-y-4">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Terms of Service</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Cookie Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-12 border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-400">© 2025 AIVivid. All rights reserved.</p>
+                <div class="flex space-x-6 mt-4 md:mt-0">
+                    <a href="#" class="text-gray-400 hover:text-primary" aria-label="Facebook">
+                        <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd"/></svg>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-primary" aria-label="Twitter">
+                        <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743A11.65 11.65 0 011.938 6.7a4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"/></svg>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-primary" aria-label="LinkedIn">
+                        <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" clip-rule="evenodd"/></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scroll to top button -->
+    <button id="scrollToTop" class="fixed bottom-8 right-8 bg-primary hover:bg-blue-600 text-white p-3 rounded-full shadow-lg transform transition-transform duration-300 scale-0">
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+        </svg>
+    </button>
+
+    <!-- JavaScript -->
+    <script>
+        // Scroll to top functionality
+        const scrollToTopBtn = document.getElementById('scrollToTop');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                scrollToTopBtn.classList.remove('scale-0');
+            } else {
+                scrollToTopBtn.classList.add('scale-0');
+            }
+        });
+        scrollToTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // Update mobile menu based on auth status
+        function updateMobileMenu() {
+            const token = localStorage.getItem('authToken');
+            const mobileAuthButtons = document.getElementById('mobileAuthButtons');
+            const mobileUserMenu = document.getElementById('mobileUserMenu');
+            
+            if (token) {
+                mobileAuthButtons?.classList.add('hidden');
+                mobileUserMenu?.classList.remove('hidden');
+                
+                const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+                document.getElementById('mobileUserName')?.textContent = userData.name || 'User';
+                if (userData.avatar) {
+                    document.getElementById('mobileUserAvatar')?.src = userData.avatar;
+                }
+            } else {
+                mobileAuthButtons?.classList.remove('hidden');
+                mobileUserMenu?.classList.add('hidden');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', updateMobileMenu);
+    </script>
+</body>
+</html>

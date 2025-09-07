@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIVivid - Data Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#1E40AF',
+            dark: '#0F172A',
+            accent: '#a3c614',
+            chartBg: '#1e293b',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    .nav-item {
+      transition: all 0.3s ease;
+    }
+    .nav-item:hover {
+      background-color: rgba(59, 130, 246, 0.1);
+      transform: translateX(5px);
+    }
+    .nav-item.active {
+      background-color: rgba(59, 130, 246, 0.15);
+      border-left: 4px solid #3B82F6;
+      color: white !important;
+    }
+    .card {
+      background: linear-gradient(145deg, #1e293b, #2d3748);
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+    }
+    .card canvas {
+      max-width: 100%;
+      max-height: 100%;
+      width: 100%;
+    }
+    .table-row {
+      transition: background-color 0.2s ease;
+    }
+    .table-row:hover {
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+    .severity-badge {
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.5rem;
+      font-size: 0.75rem;
+      transition: transform 0.2s ease;
+    }
+    .severity-badge:hover {
+      transform: scale(1.1);
+    }
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: #a3c614;
+      font-size: 1.2rem;
+    }
+    .card-icon {
+      width: 1.5rem;
+      height: 1.5rem;
+      margin-right: 0.5rem;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body class="bg-dark text-white font-sans">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-64 bg-dark border-r border-gray-800">
+      <div class="p-6">
+        <div class="flex items-center">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="AIVivid Logo" class="h-8 w-auto">
+          <span class="ml-2 text-xl font-bold text-accent">AIVivid</span>
+        </div>
+      </div>
+      <nav class="mt-6 px-4 space-y-2">
+        <a href="{{ url_for('user_profile.profile') }}" class="nav-item flex items-center px-4 py-3 rounded-lg text-gray-300 hover:text-white {% if request.endpoint == 'user_profile.profile' %}active{% endif %}">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A7 7 0 0112 15a7 7 0 016.879 2.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Profile
+        </a>
+        <a href="{{ url_for('user_activity.user_activity') }}" class="nav-item flex items-center px-4 py-3 rounded-lg text-gray-300 hover:text-white {% if request.endpoint == 'user_activity.user_activity' %}active{% endif %}">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h11M9 21V3m4 18h8" />
+          </svg>
+          Activity Log
+        </a>
+        <a href="{{ url_for('data_dashboard.data_dashboard') }}" class="nav-item flex items-center px-4 py-3 rounded-lg text-white active">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 11V3H4v8h7zm0 10v-8H4v8h7zm9-10V3h-7v8h7zm0 10v-8h-7v8h7z" />
+          </svg>
+          Data Dashboard
+        </a>
+        <a href="{{ url_for('settings.settings') }}" class="nav-item flex items-center px-4 py-3 rounded-lg text-gray-300 hover:text-white {% if request.endpoint == 'settings.settings' %}active{% endif %}">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Settings
+        </a>
+        <a href="{{ url_for('index') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+          <span class="w-5 h-5 mr-3 text-gray-300">&larr;</span>
+          Back to Home
+        </a>
+      </nav>
+    </div>
+
+    <!-- Main content -->
+    <div class="flex-1 p-8 overflow-y-auto">
+      <h1 class="text-4xl font-bold mb-8 text-accent">Welcome, {{ current_user.full_name or current_user.username }}</h1>
+
+      <div id="flash-messages" class="mb-6">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="mb-4 p-4 rounded bg-green-500 text-white animate-fade-in">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8" id="dashboard-cards">
+        <div class="card flex items-center">
+          <svg class="card-icon" fill="none" stroke="#3B82F6" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6h6v6M3 3h18v18H3V3z" />
+          </svg>
+          <div>
+            <h3 class="text-lg font-semibold mb-2">Total Devices</h3>
+            <p class="text-2xl font-bold text-accent" id="total-devices">Loading...</p>
+          </div>
+        </div>
+        <div class="card flex items-center">
+          <svg class="card-icon" fill="none" stroke="#22c55e" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <div>
+            <h3 class="text-lg font-semibold mb-2">Active Devices</h3>
+            <p class="text-2xl font-bold text-green-400" id="active-devices">Loading...</p>
+          </div>
+        </div>
+        <div class="card flex items-center">
+          <svg class="card-icon" fill="none" stroke="#ef4444" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3" />
+          </svg>
+          <div>
+            <h3 class="text-lg font-semibold mb-2">Vulnerable Devices</h3>
+            <p class="text-2xl font-bold text-red-500" id="vulnerable-devices">Loading...</p>
+          </div>
+        </div>
+        <div class="card flex items-center">
+          <svg class="card-icon" fill="none" stroke="#3B82F6" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <div>
+            <h3 class="text-lg font-semibold mb-2">Total Scans</h3>
+            <p class="text-2xl font-bold text-accent" id="total-scans">Loading...</p>
+          </div>
+        </div>
+        <div class="card flex items-center">
+          <svg class="card-icon" fill="none" stroke="#9ca3af" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <div>
+            <h3 class="text-lg font-semibold mb-2">Last Scan Date</h3>
+            <p class="text-xl text-gray-300" id="last-scan-date">Loading...</p>
+          </div>
+        </div>
+        <div class="card flex items-center">
+          <svg class="card-icon" fill="none" stroke="#9ca3af" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          <div>
+            <h3 class="text-lg font-semibold mb-2">Most Common Device Type</h3>
+            <p class="text-xl text-gray-300" id="most-common-type">Loading...</p>
+          </div>
+        </div>
+        <div class="card flex items-center">
+          <svg class="card-icon" fill="none" stroke="#eab308" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <h3 class="text-lg font-semibold mb-2">Security Score</h3>
+            <p class="text-2xl font-bold" id="security-score">Loading...</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div class="card" style="min-height: 400px;">
+          <h3 class="text-2xl font-semibold mb-4">Threat Trends</h3>
+          <div id="threatTrendsChartLoading" class="loading">Loading...</div>
+          <canvas id="threatTrendsChart" style="display: none;"></canvas>
+        </div>
+        <div class="card" style="min-height: 400px;">
+          <h3 class="text-2xl font-semibold mb-4">Vulnerability Distribution</h3>
+          <div id="vulnerabilityChartLoading" class="loading">Loading...</div>
+          <canvas id="vulnerabilityChart" style="display: none;"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="text-2xl font-semibold mb-4">Recent Threats</h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-800">
+            <thead>
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Detection Time</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Threat Type</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Severity</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Device ID</th>
+              </tr>
+            </thead>
+            <tbody id="recentThreatsTable" class="divide-y divide-gray-800">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- JavaScript to fetch API data -->
+    <script>
+      // Format date for display
+      function formatDate(timestamp) {
+        try {
+          const date = new Date(timestamp);
+          if (isNaN(date.getTime())) return 'Invalid Date';
+          return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+        } catch (e) {
+          console.error('Error parsing date:', e);
+          return 'Invalid Date';
+        }
+      }
+
+      // Gradient creator for charts
+      function createGradient(ctx, chartArea, colorStart, colorEnd) {
+        const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+        gradient.addColorStop(0, colorStart);
+        gradient.addColorStop(1, colorEnd);
+        return gradient;
+      }
+
+      // Initialize Threat Trends Chart (Line Chart)
+      let threatTrendsChart;
+      function initializeThreatTrendsChart(dates, high, medium, low) {
+        const canvas = document.getElementById('threatTrendsChart');
+        const loading = document.getElementById('threatTrendsChartLoading');
+        loading.style.display = 'none';
+        canvas.style.display = 'block';
+
+        if (threatTrendsChart) threatTrendsChart.destroy();
+        const ctx = canvas.getContext('2d');
+        threatTrendsChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: dates.length ? dates : ['No Data'],
+            datasets: [
+              {
+                label: 'High Severity',
+                data: high.length ? high : [0],
+                borderColor: '#ef4444',
+                backgroundColor: function(context) {
+                  const chart = context.chart;
+                  const { ctx, chartArea } = chart;
+                  if (!chartArea) return 'rgba(239, 68, 68, 0.2)';
+                  return createGradient(ctx, chartArea, 'rgba(239, 68, 68, 0.2)', 'rgba(239, 68, 68, 0.5)');
+                },
+                fill: true,
+                tension: 0.4,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBackgroundColor: '#ef4444',
+                pointHoverBackgroundColor: '#dc2626',
+                pointBorderColor: '#1e293b',
+                pointBorderWidth: 2
+              },
+              {
+                label: 'Medium Severity',
+                data: medium.length ? medium : [0],
+                borderColor: '#f97316',
+                backgroundColor: function(context) {
+                  const chart = context.chart;
+                  const { ctx, chartArea } = chart;
+                  if (!chartArea) return 'rgba(249, 115, 22, 0.2)';
+                  return createGradient(ctx, chartArea, 'rgba(249, 115, 22, 0.2)', 'rgba(249, 115, 22, 0.5)');
+                },
+                fill: true,
+                tension: 0.4,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBackgroundColor: '#f97316',
+                pointHoverBackgroundColor: '#ea580c',
+                pointBorderColor: '#1e293b',
+                pointBorderWidth: 2
+              },
+              {
+                label: 'Low Severity',
+                data: low.length ? low : [0],
+                borderColor: '#22c55e',
+                backgroundColor: function(context) {
+                  const chart = context.chart;
+                  const { ctx, chartArea } = chart;
+                  if (!chartArea) return 'rgba(34, 197, 94, 0.2)';
+                  return createGradient(ctx, chartArea, 'rgba(34, 197, 94, 0.2)', 'rgba(34, 197, 94, 0.5)');
+                },
+                fill: true,
+                tension: 0.4,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBackgroundColor: '#22c55e',
+                pointHoverBackgroundColor: '#16a34a',
+                pointBorderColor: '#1e293b',
+                pointBorderWidth: 2
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 2,
+            animation: {
+              duration: 1200,
+              easing: 'easeOutQuart'
+            },
+            interaction: {
+              mode: 'nearest',
+              axis: 'x',
+              intersect: false
+            },
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: {
+                  color: '#ffffff',
+                  font: { size: 14, weight: '500' },
+                  padding: 15,
+                  boxWidth: 20,
+                  usePointStyle: true
+                },
+                onHover: function(event, legendItem, legend) {
+                  event.native.target.style.cursor = 'pointer';
+                },
+                onLeave: function(event, legendItem, legend) {
+                  event.native.target.style.cursor = 'default';
+                }
+              },
+              tooltip: {
+                backgroundColor: 'rgba(30, 64, 175, 0.95)',
+                titleFont: { size: 14, weight: 'bold' },
+                bodyFont: { size: 12 },
+                padding: 12,
+                cornerRadius: 8,
+                boxPadding: 6,
+                callbacks: {
+                  title: function(context) {
+                    return context[0].label === 'No Data' ? 'No Data Available' : formatDate(context[0].label);
+                  },
+                  label: function(context) {
+                    return context.dataset.label + ': ' + (context.parsed.y === 0 ? 'No Threats' : context.parsed.y);
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                display: true,
+                title: { display: true, text: 'Date', color: '#ffffff', font: { size: 14, weight: '500' } },
+                grid: { color: 'rgba(255, 255, 255, 0.1)', borderDash: [5, 5] },
+                ticks: {
+                  color: '#ffffff',
+                  font: { size: 12 },
+                  maxRotation: 45,
+                  minRotation: 45,
+                  maxTicksLimit: 10
+                }
+              },
+              y: {
+                display: true,
+                title: { display: true, text: 'Number of Threats', color: '#ffffff', font: { size: 14, weight: '500' } },
+                grid: { color: 'rgba(255, 255, 255, 0.1)', borderDash: [5, 5] },
+                ticks: {
+                  color: '#ffffff',
+                  beginAtZero: true,
+                  font: { size: 12 }
+                }
+              }
+            }
+          }
+        });
+
+        // Force resize to prevent elongation
+        window.addEventListener('resize', () => {
+          threatTrendsChart.resize();
+        });
+      }
+
+      // Initialize Vulnerability Distribution Chart (Pie Chart)
+      let vulnerabilityChart;
+      function initializeVulnerabilityChart(labels, data) {
+        const canvas = document.getElementById('vulnerabilityChart');
+        const loading = document.getElementById('vulnerabilityChartLoading');
+        loading.style.display = 'none';
+        canvas.style.display = 'block';
+
+        if (vulnerabilityChart) vulnerabilityChart.destroy();
+        const ctx = canvas.getContext('2d');
+        vulnerabilityChart = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: labels.length ? labels : ['No Data'],
+            datasets: [{
+              data: data.length ? data : [1],
+              backgroundColor: labels.length ? [
+                'rgba(239, 68, 68, 0.8)',
+                'rgba(249, 115, 22, 0.8)',
+                'rgba(34, 197, 94, 0.8)',
+                'rgba(59, 130, 246, 0.8)'
+              ] : ['rgba(100, 100, 100, 0.5)'],
+              borderColor: '#1e293b',
+              borderWidth: 2,
+              hoverOffset: 25
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 1,
+            animation: {
+              duration: 1500,
+              easing: 'easeOutElastic',
+              animateRotate: true,
+              animateScale: true
+            },
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: {
+                  color: '#ffffff',
+                  font: { size: 14, weight: '500' },
+                  padding: 20,
+                  boxWidth: 20,
+                  usePointStyle: true,
+                  generateLabels: function(chart) {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      strokeStyle: '#1e293b',
+                      lineWidth: 2,
+                      pointStyle: 'circle',
+                      hidden: !chart.getDataVisibility(i),
+                      index: i
+                    }));
+                  }
+                },
+                onHover: function(event, legendItem, legend) {
+                  event.native.target.style.cursor = 'pointer';
+                  legend.chart.data.datasets[0].hoverBackgroundColor = legend.chart.data.datasets[0].backgroundColor.map(color => color.replace('0.8', '1.0'));
+                  legend.chart.update();
+                },
+                onLeave: function(event, legendItem, legend) {
+                  event.native.target.style.cursor = 'default';
+                  legend.chart.data.datasets[0].hoverBackgroundColor = null;
+                  legend.chart.update();
+                }
+              },
+              tooltip: {
+                backgroundColor: 'rgba(30, 64, 175, 0.95)',
+                titleFont: { size: 14, weight: 'bold' },
+                bodyFont: { size: 12 },
+                padding: 12,
+                cornerRadius: 8,
+                boxPadding: 6,
+                callbacks: {
+                  label: function(context) {
+                    if (context.label === 'No Data') return 'No Data Available';
+                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                    return `${context.label}: ${context.parsed} (${percentage}%)`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      // Update Recent Threats Table
+      function updateRecentThreatsTable(threats) {
+        const tbody = document.getElementById('recentThreatsTable');
+        tbody.innerHTML = '';
+        if (!threats || threats.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-400">
+                No recent threats available
+              </td>
+            </tr>`;
+          return;
+        }
+        threats.forEach(threat => {
+          const row = document.createElement('tr');
+          row.classList.add('table-row');
+          row.innerHTML = `
+            <td class="px-6 py-4 text-sm">${formatDate(threat.Detection_Time)}</td>
+            <td class="px-6 py-4 text-sm">${threat.Threat_Type || 'N/A'}</td>
+            <td class="px-6 py-4 text-sm">
+              <span class="severity-badge inline-block px-2 py-1 text-xs rounded
+                ${threat.Severity === 'High' ? 'bg-gradient-to-r from-red-900 to-red-700 text-red-200' :
+                  threat.Severity === 'Medium' ? 'bg-gradient-to-r from-yellow-900 to-yellow-700 text-yellow-200' :
+                  'bg-gradient-to-r from-green-900 to-green-700 text-green-200'}">
+                ${threat.Severity || 'N/A'}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-sm">${threat.Device_ID || 'N/A'}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      }
+
+      // Fetch and update dashboard data
+      document.addEventListener('DOMContentLoaded', async () => {
+        const dashboardCards = document.getElementById('dashboard-cards');
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'loading col-span-3';
+        loadingDiv.textContent = 'Loading dashboard data...';
+        dashboardCards.appendChild(loadingDiv);
+
+        try {
+          // Fetch all API data concurrently
+          const [deviceStatsRes, threatTrendsRes, vulnDistRes, recentThreatsRes, deviceTypesRes, securityScoreRes] = await Promise.all([
+            fetch('/data_dashboard/api/device-stats').then(res => {
+              if (!res.ok) throw new Error(`Device stats error: ${res.status}`);
+              return res.json();
+            }),
+            fetch('/data_dashboard/api/threat-trends').then(res => {
+              if (!res.ok) throw new Error(`Threat trends error: ${res.status}`);
+              return res.json();
+            }),
+            fetch('/data_dashboard/api/vulnerability-distribution').then(res => {
+              if (!res.ok) throw new Error(`Vulnerability distribution error: ${res.status}`);
+              return res.json();
+            }),
+            fetch('/data_dashboard/api/recent-threats').then(res => {
+              if (!res.ok) throw new Error(`Recent threats error: ${res.status}`);
+              return res.json();
+            }),
+            fetch('/data_dashboard/api/device-types').then(res => {
+              if (!res.ok) throw new Error(`Device types error: ${res.status}`);
+              return res.json();
+            }),
+            fetch('/data_dashboard/api/security-score').then(res => {
+              if (!res.ok) throw new Error(`Security score error: ${res.status}`);
+              return res.json();
+            })
+          ]);
+
+          // Remove loading state
+          loadingDiv.remove();
+
+          // Update dashboard cards
+          document.getElementById('total-devices').textContent = deviceStats.total_devices ?? '0';
+          document.getElementById('active-devices').textContent = deviceStats.active_devices ?? '0';
+          document.getElementById('vulnerable-devices').textContent = deviceStats.vulnerable_devices ?? '0';
+          document.getElementById('total-scans').textContent = deviceStats.total_scans ?? '0';
+          document.getElementById('last-scan-date').textContent = deviceStats.last_scan ?
+            new Date(deviceStats.last_scan).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) :
+            'No scans yet';
+          document.getElementById('most-common-type').textContent = deviceStats.most_common_type ?? 'N/A';
+          document.getElementById('security-score').textContent = `${securityScore.overall_score ?? 0}%`;
+          document.getElementById('security-score').className = `text-2xl font-bold ${
+            (securityScore.overall_score ?? 0) >= 80 ? 'text-green-400' :
+            (securityScore.overall_score ?? 0) >= 50 ? 'text-yellow-400' : 'text-red-500'
+          }`;
+
+          // Update charts
+          initializeThreatTrendsChart(
+            threatTrends.dates || [],
+            threatTrends.high || [],
+            threatTrends.medium || [],
+            threatTrends.low || []
+          );
+          initializeVulnerabilityChart(
+            Object.keys(vulnDist || {}),
+            Object.values(vulnDist || {})
+          );
+
+          // Update recent threats table
+          updateRecentThreatsTable(recentThreats || []);
+
+        } catch (error) {
+          console.error('Dashboard data loading failed:', error);
+          loadingDiv.textContent = '⚠️ Failed to load dashboard data';
+          loadingDiv.className = 'text-red-500 col-span-3 text-center p-4';
+          initializeThreatTrendsChart([], [], [], []);
+          initializeVulnerabilityChart([], []);
+          updateRecentThreatsTable([]);
+        }
+      });
+    </script>
+</body>
+</html>

@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIVivid - Activity Logs</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#1E40AF',
+            dark: '#0F172A',
+            accent: '#a3c614',
+            chartBg: '#1e293b',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    .nav-item {
+      transition: all 0.3s ease;
+    }
+    .nav-item:hover {
+      background-color: rgba(59, 130, 246, 0.1);
+      transform: translateX(5px);
+    }
+    .nav-item.active {
+      background-color: rgba(59, 130, 246, 0.15);
+      border-left: 4px solid #3B82F6;
+      color: white !important;
+    }
+    .card {
+      background-color: #1e293b;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+    }
+    .card canvas {
+      max-width: 100%;
+      max-height: 100%;
+    }
+    .table-row {
+      transition: background-color 0.2s ease;
+    }
+    .table-row:hover {
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+    select {
+      transition: all 0.3s ease;
+    }
+    select:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px #3B82F6;
+    }
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: #a3c614;
+      font-size: 1.2rem;
+    }
+  </style>
+</head>
+<body class="bg-dark text-white font-sans">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-64 bg-dark border-r border-gray-800">
+      <div class="p-6">
+        <div class="flex items-center">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="AIVivid Logo" class="h-8 w-auto">
+          <span class="ml-2 text-xl font-bold text-accent">AIVivid</span>
+        </div>
+      </div>
+      <nav class="mt-6 px-4 space-y-2">
+        <a href="{{ url_for('user_profile.profile') }}" class="nav-item flex items-center px-4 py-3 rounded-lg text-gray-300 hover:text-white {% if request.endpoint == 'user_profile.profile' %}active{% endif %}">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A7 7 0 0112 15a7 7 0 016.879 2.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          Profile
+        </a>
+        <a href="{{ url_for('user_activity.user_activity') }}" class="nav-item flex items-center px-4 py-3 rounded-lg text-white active">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h11M9 21V3m4 18h8" />
+          </svg>
+          Activity Log
+        </a>
+        <a href="{{ url_for('data_dashboard.data_dashboard') }}" class="nav-item flex items-center px-4 py-3 rounded-lg text-gray-300 hover:text-white {% if request.endpoint == 'data_dashboard.data_dashboard' %}active{% endif %}">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 11V3H4v8h7zm0 10v-8H4v8h7zm9-10V3h-7v8h7zm0 10v-8h-7v8h7z"/>
+          </svg>
+          Data Dashboard
+        </a>
+        <a href="{{ url_for('settings.settings') }}" class="nav-item flex items-center px-4 py-3 rounded-lg text-gray-300 hover:text-white {% if request.endpoint == 'settings.settings' %}active{% endif %}">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          Settings
+        </a>
+        <a href="{{ url_for('index') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+          <span class="w-5 h-5 mr-3 text-gray-300">&larr;</span>
+          Back to Home
+        </a>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 p-8 overflow-y-auto">
+      <h1 class="text-4xl font-bold mb-8 text-accent">My Activity Logs</h1>
+
+      <div class="card mb-8">
+        <h3 class="text-2xl font-semibold mb-4">Filter Activities</h3>
+        <select id="activityFilter" class="bg-gray-800 text-white p-3 rounded-lg w-full md:w-1/3 focus:ring-2 focus:ring-primary">
+          <option value="">All Activities</option>
+          <option value="login">Login</option>
+          <option value="logout">Logout</option>
+          <option value="profile_update">Profile Update</option>
+        </select>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div class="card" style="min-height: 400px;">
+          <h3 class="text-2xl font-semibold mb-4">Activity Timeline</h3>
+          <div id="activityChartLoading" class="loading">Loading...</div>
+          <canvas id="activityChart" style="display: none;"></canvas>
+        </div>
+        <div class="card" style="min-height: 400px;">
+          <h3 class="text-2xl font-semibold mb-4">Activity Type Distribution</h3>
+          <div id="distributionChartLoading" class="loading">Loading...</div>
+          <canvas id="distributionChart" style="display: none;"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-2xl font-semibold">Recent Activities</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-700">
+            <thead>
+              <tr>
+                <th class="px-6 py-4 text-left text-sm font-medium text-gray-400 uppercase tracking-wider">Timestamp</th>
+                <th class="px-6 py-4 text-left text-sm font-medium text-gray-400 uppercase tracking-wider">Activity Type</th>
+                <th class="px-6 py-4 text-left text-sm font-medium text-gray-400 uppercase tracking-wider">Description</th>
+                <th class="px-6 py-4 text-left text-sm font-medium text-gray-400 uppercase tracking-wider">IP Address</th>
+              </tr>
+            </thead>
+            <tbody id="activityTable" class="divide-y divide-gray-700">
+              {% for activity in activities %}
+              <tr class="table-row">
+                <td class="px-6 py-4 text-sm">{{ activity.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                <td class="px-6 py-4 text-sm">{{ activity.activity_type }}</td>
+                <td class="px-6 py-4 text-sm">{{ activity.description }}</td>
+                <td class="px-6 py-4 text-sm">{{ activity.ip_address or 'N/A' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Format timestamp for display
+    function formatDate(timestamp) {
+      try {
+        const date = new Date(timestamp);
+        if (isNaN(date.getTime())) return 'Invalid Date';
+        return date.toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+      } catch (e) {
+        console.error('Error parsing date:', e);
+        return 'Invalid Date';
+      }
+    }
+
+    // Gradient creator for charts
+    function createGradient(ctx, chartArea, colorStart, colorEnd) {
+      const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+      gradient.addColorStop(0, colorStart);
+      gradient.addColorStop(1, colorEnd);
+      return gradient;
+    }
+
+    // Initialize Activity Timeline Chart (Bar Chart)
+    let activityChart;
+    function initializeActivityChart(labels, data) {
+      const canvas = document.getElementById('activityChart');
+      const loading = document.getElementById('activityChartLoading');
+      loading.style.display = 'none';
+      canvas.style.display = 'block';
+
+      if (activityChart) activityChart.destroy();
+      const ctx = canvas.getContext('2d');
+      activityChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels.length ? labels : ['No Data'],
+          datasets: [{
+            label: 'Activity Count',
+            data: data.length ? data : [0],
+            backgroundColor: function(context) {
+              const chart = context.chart;
+              const { ctx, chartArea } = chart;
+              if (!chartArea) return '#3B82F6';
+              return createGradient(ctx, chartArea, 'rgba(59, 130, 246, 0.4)', 'rgba(59, 130, 246, 0.9)');
+            },
+            borderColor: '#3B82F6',
+            borderWidth: 1,
+            borderRadius: 12,
+            barThickness: 'flex',
+            maxBarThickness: 25,
+            minBarLength: 5,
+            hoverBackgroundColor: '#a3c614'
+          }]
+        },
+        options: {
+          aspectRatio: 1.5,
+          responsive: true,
+          maintainAspectRatio: true,
+          animation: {
+            duration: 1200,
+            easing: 'easeOutQuart'
+          },
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            tooltip: {
+              backgroundColor: 'rgba(30, 64, 175, 0.95)',
+              titleFont: { size: 14, weight: 'bold' },
+              bodyFont: { size: 12 },
+              padding: 12,
+              cornerRadius: 8,
+              boxPadding: 6,
+              callbacks: {
+                title: function(context) {
+                  return context[0].label === 'No Data' ? 'No Data Available' : formatDate(context[0].label);
+                },
+                label: function(context) {
+                  return context.parsed.y === 0 ? 'No Activities' : `Activities: ${context.parsed.y}`;
+                }
+              }
+            },
+            legend: {
+              display: true,
+              position: 'top',
+              labels: {
+                color: '#ffffff',
+                font: { size: 14, weight: '500' },
+                padding: 15,
+                boxWidth: 20,
+                usePointStyle: true
+              }
+            }
+          },
+          scales: {
+            x: {
+              display: true,
+              title: { display: true, text: 'Date', color: '#ffffff', font: { size: 14, weight: '500' } },
+              grid: { display: false },
+              ticks: {
+                color: '#ffffff',
+                maxRotation: 45,
+                minRotation: 45,
+                font: { size: 12 }
+              }
+            },
+            y: {
+              display: true,
+              title: { display: true, text: 'Number of Activities', color: '#ffffff', font: { size: 14, weight: '500' } },
+              grid: { color: 'rgba(255, 255, 255, 0.1)', borderDash: [5, 5] },
+              ticks: {
+                color: '#ffffff',
+                beginAtZero: true,
+                font: { size: 12 }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Initialize Activity Distribution Chart (Doughnut Chart)
+    let distributionChart;
+    function initializeDistributionChart(labels, data) {
+      const canvas = document.getElementById('distributionChart');
+      const loading = document.getElementById('distributionChartLoading');
+      loading.style.display = 'none';
+      canvas.style.display = 'block';
+
+      if (distributionChart) distributionChart.destroy();
+      const ctx = canvas.getContext('2d');
+      distributionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels.length ? labels : ['No Data'],
+          datasets: [{
+            data: data.length ? data : [1],
+            backgroundColor: labels.length ? [
+              'rgba(59, 130, 246, 0.8)',
+              'rgba(30, 64, 175, 0.8)',
+              'rgba(163, 198, 20, 0.8)',
+              'rgba(245, 158, 11, 0.8)',
+              'rgba(239, 68, 68, 0.8)'
+            ] : ['rgba(100, 100, 100, 0.5)'],
+            borderColor: '#1e293b',
+            borderWidth: 2,
+            hoverOffset: 25
+          }]
+        },
+        options: {
+          aspectRatio: 1,
+          responsive: true,
+          maintainAspectRatio: true,
+          cutout: '70%',
+          animation: {
+            duration: 1500,
+            easing: 'easeOutElastic',
+            animateRotate: true,
+            animateScale: true
+          },
+          interaction: {
+            mode: 'point',
+            intersect: true
+          },
+          plugins: {
+            tooltip: {
+              backgroundColor: 'rgba(30, 64, 175, 0.95)',
+              titleFont: { size: 14, weight: 'bold' },
+              bodyFont: { size: 12 },
+              padding: 12,
+              cornerRadius: 8,
+              boxPadding: 6,
+              callbacks: {
+                label: function(context) {
+                  if (context.label === 'No Data') return 'No Data Available';
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((context.parsed / total) * 100).toFixed(1);
+                  return `${context.label}: ${context.parsed} (${percentage}%)`;
+                }
+              }
+            },
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#ffffff',
+                font: { size: 14, weight: '500' },
+                padding: 20,
+                boxWidth: 20,
+                usePointStyle: true,
+                generateLabels: function(chart) {
+                  const data = chart.data;
+                  return data.labels.map((label, i) => ({
+                    text: label,
+                    fillStyle: data.datasets[0].backgroundColor[i],
+                    strokeStyle: '#1e293b',
+                    lineWidth: 2,
+                    pointStyle: 'circle',
+                    hidden: !chart.getDataVisibility(i),
+                    index: i
+                  }));
+                }
+              },
+              onHover: function(event, legendItem, legend) {
+                event.native.target.style.cursor = 'pointer';
+                legend.chart.data.datasets[0].hoverBackgroundColor = legend.chart.data.datasets[0].backgroundColor.map(color => color.replace('0.8', '1.0'));
+                legend.chart.update();
+              },
+              onLeave: function(event, legendItem, legend) {
+                event.native.target.style.cursor = 'default';
+                legend.chart.data.datasets[0].hoverBackgroundColor = null;
+                legend.chart.update();
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Fetch and update activities
+    function fetchActivities(activityType = '') {
+      const tbody = document.getElementById('activityTable');
+      const activityChartLoading = document.getElementById('activityChartLoading');
+      activityChartLoading.style.display = 'block';
+      document.getElementById('activityChart').style.display = 'none';
+
+      fetch(`/user/activity/api/logs?activity_type=${activityType}`)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          tbody.innerHTML = '';
+          if (!data || data.length === 0) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-400">
+                  No activity records available
+                </td>
+              </tr>`;
+            initializeActivityChart([], []);
+            return;
+          }
+          data.forEach(activity => {
+            const row = document.createElement('tr');
+            row.classList.add('table-row');
+            row.innerHTML = `
+              <td class="px-6 py-4 text-sm">${formatDate(activity.timestamp)}</td>
+              <td class="px-6 py-4 text-sm">${activity.activity_type}</td>
+              <td class="px-6 py-4 text-sm">${activity.description}</td>
+              <td class="px-6 py-4 text-sm">${activity.ip_address || 'N/A'}</td>
+            `;
+            tbody.appendChild(row);
+          });
+
+          // Update timeline chart
+          const timelineData = data.reduce((acc, curr) => {
+            const date = new Date(curr.timestamp).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            });
+            acc[date] = (acc[date] || 0) + 1;
+            return acc;
+          }, {});
+          const sortedLabels = Object.keys(timelineData).sort((a, b) => new Date(a) - new Date(b));
+          const sortedData = sortedLabels.map(label => timelineData[label]);
+          initializeActivityChart(sortedLabels, sortedData);
+        })
+        .catch(error => {
+          console.error('Error fetching activities:', error);
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-400">
+                Error loading activities
+              </td>
+            </tr>`;
+          initializeActivityChart([], []);
+        });
+    }
+
+    // Fetch and update activity summary
+    function fetchActivitySummary() {
+      const distributionChartLoading = document.getElementById('distributionChartLoading');
+      distributionChartLoading.style.display = 'block';
+      document.getElementById('distributionChart').style.display = 'none';
+
+      fetch('/user/activity/api/summary')
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          if (!data || Object.keys(data).length === 0) {
+            initializeDistributionChart([], []);
+            return;
+          }
+          initializeDistributionChart(Object.keys(data), Object.values(data));
+        })
+        .catch(error => {
+          console.error('Error fetching activity summary:', error);
+          initializeDistributionChart([], []);
+        });
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchActivities();
+      fetchActivitySummary();
+
+      // Activity type filter
+      document.getElementById('activityFilter').addEventListener('change', (e) => {
+        fetchActivities(e.target.value);
+      });
+    });
+  </script>
+</body>
+</html>

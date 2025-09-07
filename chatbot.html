@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plato Chatbot</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#1E40AF',
+                        dark: '#0F172A',
+                        accent: '#a3c614',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 3s ease-in-out infinite',
+                        'typing': 'typing 1.5s infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' }
+                        },
+                        typing: {
+                            '0%': { width: '0' },
+                            '50%': { width: '100%' },
+                            '100%': { width: '0' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body class="bg-dark text-white font-sans flex">
+    <!-- Sidebar -->
+    <div class="w-64 h-screen p-4" style="background: linear-gradient(135deg, #1E40AF, #0F172A);">
+        <div class="flex items-center mb-6">
+            <img class="h-10 w-auto" src="{{ url_for('static', filename='images/logo.png') }}" alt="Plato Logo">
+            <span class="ml-2 text-2xl font-bold text-accent">Plato</span>
+        </div>
+        <ul class="space-y-2">
+            <li><button id="new-chat" class="w-full text-left p-2 bg-accent hover:bg-lime-600 rounded text-white shadow-md">New Chat</button></li>
+            <li><button id="chat-history" class="w-full text-left p-2 bg-primary hover:bg-blue-700 rounded text-white shadow-md">Chat History</button></li>
+            <li class="relative">
+                <button id="history-actions" class="w-full text-left p-2 bg-secondary hover:bg-blue-800 rounded text-white shadow-md">History Actions</button>
+                <div id="history-actions-menu" class="hidden absolute left-0 w-full bg-gray-800 p-2 rounded mt-1 z-10">
+                    <button id="clear-history" class="block w-full text-left p-2 hover:bg-gray-700 rounded">Clear History</button>
+                    <button id="delete-history" class="block w-full text-left p-2 hover:bg-gray-700 rounded">Delete History</button>
+                    <button id="delete-all-history" class="block w-full text-left p-2 hover:bg-gray-700 rounded">Delete All History</button>
+                </div>
+            </li>
+        </ul>
+        <div id="chat-history-container" class="h-48 overflow-y-auto mt-4 mb-6 bg-gray-800 p-2 rounded">
+            <!-- Chat history will be populated here -->
+        </div>
+        <div class="mt-auto">
+            <a href="{{ url_for('index') }}" class="block w-full text-left p-2 bg-primary hover:bg-blue-700 rounded text-white shadow-md">Back to Home</a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 p-4">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-3xl font-bold text-accent">Plato Chatbot</h1>
+            <button id="theme-toggle" class="bg-primary text-white px-3 py-1 rounded">Toggle Theme</button>
+        </div>
+        <div id="chat-box" class="bg-gray-800 p-4 rounded h-96 overflow-y-scroll mb-4"></div>
+        <div class="relative">
+            <form id="chat-form" class="flex">
+                <button type="button" id="add-files" class="bg-secondary text-white px-3 rounded-l-none rounded-r">+</button>
+                <input type="text" id="user-input" class="flex-grow p-2 rounded-none bg-gray-700 border-none" placeholder="Ask something..." required>
+                <button type="button" id="voice-input" class="bg-secondary text-white px-3 rounded-l-none rounded-r-none">🎙️</button>
+                <button type="submit" class="bg-primary text-white px-4 rounded-r">Send</button>
+                <div id="file-options" class="hidden absolute bottom-full left-0 w-full bg-gray-800 p-2 rounded mt-1 z-10">
+                    <label class="block p-2 hover:bg-gray-700 rounded cursor-pointer"><input type="file" id="file-upload" class="hidden">Upload File</label>
+                    <button id="take-photo" class="block w-full text-left p-2 hover:bg-gray-700 rounded">Take Photo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const voiceInput = document.getElementById('voice-input');
+        const themeToggle = document.getElementById('theme-toggle');
+        const newChat = document.getElementById('new-chat');
+        const chatHistoryContainer = document.getElementById('chat-history-container');
+        const chatHistoryBtn = document.getElementById('chat-history');
+        const historyActionsBtn = document.getElementById('history-actions');
+        const historyActionsMenu = document.getElementById('history-actions-menu');
+        const clearHistoryBtn = document.getElementById('clear-history');
+        const deleteHistoryBtn = document.getElementById('delete-history');
+        const deleteAllHistoryBtn = document.getElementById('delete-all-history');
+        const addFiles = document.getElementById('add-files');
+        const fileOptions = document.getElementById('file-options');
+        const fileUpload = document.getElementById('file-upload');
+        const takePhoto = document.getElementById('take-photo');
+
+        // Theme Toggle
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('bg-dark');
+            document.body.classList.toggle('bg-gray-100');
+            chatBox.classList.toggle('bg-gray-800');
+            chatBox.classList.toggle('bg-gray-200');
+            userInput.classList.toggle('bg-gray-700');
+            userInput.classList.toggle('bg-gray-300');
+            Array.from(document.getElementsByTagName('button')).forEach(btn => {
+                btn.classList.toggle('bg-primary');
+                btn.classList.toggle('bg-accent');
+            });
+            document.body.classList.contains('bg-dark') ? themeToggle.textContent = 'Toggle Theme' : themeToggle.textContent = 'Toggle Theme';
+        });
+
+        // Message Append with Timestamp and Avatar, scrolling up for files
+        function appendMessage(sender, message, isBot = false, isHistory = false, isFile = false) {
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const avatar = isBot ? '🤖' : '👤';
+            const msg = document.createElement('div');
+            msg.innerHTML = `<div class="flex items-start mb-2"><span class="mr-2">${avatar}</span><div><strong>${sender}:</strong> ${message} <span class="text-gray-400 text-xs">${timestamp}</span></div></div>`;
+            msg.classList.add('my-2');
+            const container = isHistory ? chatHistoryContainer : chatBox;
+            if (isFile) {
+                container.insertBefore(msg, container.firstChild);
+                container.scrollTop = 0;
+            } else {
+                container.appendChild(msg);
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        // Typing Indicator
+        function showTypingIndicator() {
+            const typing = document.createElement('div');
+            typing.innerHTML = '<div class="flex items-start mb-2"><span class="mr-2">🤖</span><div><strong>Plato:</strong> <span class="text-accent animate-pulse">Typing...</span></div></div>';
+            typing.classList.add('my-2');
+            chatBox.appendChild(typing);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return typing;
+        }
+
+        // Speak Text with Female Voice
+        function speakText(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            const voices = speechSynthesis.getVoices();
+            const femaleVoice = voices.find(voice => voice.name.includes('Female') || voice.name.includes('Samantha') || voice.name.includes('Victoria') || voice.name.includes('Zira') || voice.name.includes('Tessa') || voice.gender === 'female') || voices[0];
+            utterance.voice = femaleVoice;
+            utterance.pitch = 1.2;
+            utterance.rate = 1.0;
+            speechSynthesis.speak(utterance);
+        }
+
+        // Ensure voices are loaded before speaking
+        function waitForVoices(callback) {
+            if (speechSynthesis.getVoices().length > 0) {
+                callback();
+            } else {
+                speechSynthesis.onvoiceschanged = () => {
+                    callback();
+                };
+            }
+        }
+
+        // New Chat
+        newChat.addEventListener('click', () => {
+            chatBox.innerHTML = '';
+            chatHistoryContainer.innerHTML = '';
+            userInput.value = '';
+        });
+
+        // Chat Form Submission
+        chatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const message = userInput.value.trim();
+    if (!message) return;
+
+    appendMessage('You', message);
+    appendMessage('You', message, false, true);
+    userInput.value = '';
+
+    const typingIndicator = showTypingIndicator();
+
+    try {
+        const res = await fetch('/chatbot/api/chatbot', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ message })
+        });
+        if (!res.ok) throw new Error('Network response was not ok');
+        const data = await res.json();
+        chatBox.removeChild(typingIndicator);
+        appendMessage('Plato', data.reply, true);
+        appendMessage('Plato', data.reply, true, true);
+        waitForVoices(() => speakText(data.reply)); // Add voice after reply is displayed
+    } catch (err) {
+        chatBox.removeChild(typingIndicator);
+        appendMessage('Plato', `Error: ${err.message}`, true);
+        console.error('Chatbot error:', err);
+    }
+});
+
+        // Voice Input with Speech Synthesis
+        voiceInput.addEventListener('click', () => {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                appendMessage('Plato', 'Sorry, your browser does not support speech recognition.', true);
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            recognition.start();
+
+            const listeningMsg = document.createElement('div');
+            listeningMsg.innerHTML = `<div class="flex items-start mb-2"><span class="mr-2">👤</span><div><strong>You:</strong> <em class="text-accent">Listening...</em></div></div>`;
+            listeningMsg.classList.add('my-2');
+            chatBox.appendChild(listeningMsg);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            recognition.onresult = async (event) => {
+                const transcript = event.results[0][0].transcript;
+                listeningMsg.innerHTML = `<div class="flex items-start mb-2"><span class="mr-2">👤</span><div><strong>You:</strong> ${transcript}</div></div>`;
+                userInput.value = transcript;
+
+                // Send original question for rephrasing and speak it
+                try {
+                    const rephraseRes = await fetch('/chatbot/api/rephrase', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ text: transcript })
+                    });
+                    if (!rephraseRes.ok) throw new Error('Rephrase request failed');
+                    const rephraseData = await rephraseRes.json();
+                    const rephrasedQuestion = rephraseData.rephrased || transcript;
+                    waitForVoices(() => speakText(rephrasedQuestion));
+
+                    // Submit original question to chatbot
+                    const chatRes = await fetch('/chatbot/api/chatbot', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ message: transcript })
+                    });
+                    if (!chatRes.ok) throw new Error('Chatbot request failed');
+                    const chatData = await chatRes.json();
+                    appendMessage('Plato', chatData.reply, true);
+                    appendMessage('Plato', chatData.reply, true, true);
+
+                    // Send bot's response for rephrasing and speak it
+                    const botRephraseRes = await fetch('/chatbot/api/rephrase', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ text: chatData.reply })
+                    });
+                    if (!botRephraseRes.ok) throw new Error('Bot rephrase request failed');
+                    const botRephraseData = await botRephraseRes.json();
+                    const rephrasedAnswer = botRephraseData.rephrased || chatData.reply;
+                    waitForVoices(() => speakText(rephrasedAnswer));
+                } catch (err) {
+                    console.error('Voice input error:', err);
+                    appendMessage('Plato', `Error processing voice input: ${err.message}`, true);
+                }
+            };
+
+            recognition.onerror = (event) => {
+                chatBox.removeChild(listeningMsg);
+                appendMessage('Plato', `Voice recognition error: ${event.error}. Please type your message.`, true);
+                console.error('Speech recognition error:', event.error);
+            };
+
+            recognition.onend = () => {
+                chatBox.removeChild(listeningMsg);
+                userInput.focus();
+            };
+        });
+
+        // Chat History
+        document.addEventListener('DOMContentLoaded', () => {
+            chatHistoryBtn.addEventListener('click', async () => {
+                chatHistoryContainer.innerHTML = '';
+                try {
+                    const res = await fetch('/chatbot/api/chatbot/history', {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include'
+                    });
+                    if (!res.ok) throw new Error('Failed to fetch history');
+                    const data = await res.json();
+                    data.forEach(log => {
+                        appendMessage('You', log.message, false, true);
+                        appendMessage('Plato', log.response, true, true);
+                    });
+                } catch (err) {
+                    console.error('History fetch error:', err);
+                    appendMessage('Plato', `Failed to load chat history: ${err.message}`, true);
+                }
+            });
+        });
+
+        // History Actions
+        historyActionsBtn.addEventListener('click', () => {
+            historyActionsMenu.classList.toggle('hidden');
+        });
+
+        clearHistoryBtn.addEventListener('click', async () => {
+            try {
+                const res = await fetch('/chatbot/api/chatbot/clear', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data = await res.json();
+                appendMessage('Plato', data.message, true);
+                chatHistoryContainer.innerHTML = '';
+            } catch (err) {
+                appendMessage('Plato', `Failed to clear chat history: ${err.message}`, true);
+                console.error('Clear history error:', err);
+            }
+            historyActionsMenu.classList.add('hidden');
+        });
+
+        deleteHistoryBtn.addEventListener('click', async () => {
+            try {
+                const res = await fetch('/chatbot/api/chatbot/delete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data = await res.json();
+                appendMessage('Plato', data.message, true);
+                chatHistoryContainer.innerHTML = '';
+            } catch (err) {
+                appendMessage('Plato', `Failed to delete chat history: ${err.message}`, true);
+                console.error('Delete history error:', err);
+            }
+            historyActionsMenu.classList.add('hidden');
+        });
+
+        deleteAllHistoryBtn.addEventListener('click', async () => {
+            try {
+                const res = await fetch('/chatbot/api/chatbot/delete-all', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data = await res.json();
+                appendMessage('Plato', data.message, true);
+                chatHistoryContainer.innerHTML = '';
+            } catch (err) {
+                appendMessage('Plato', `Failed to delete all chat history: ${err.message}`, true);
+                console.error('Delete all history error:', err);
+            }
+            historyActionsMenu.classList.add('hidden');
+        });
+
+        // Add Files/Photo Options
+        addFiles.addEventListener('click', () => {
+            fileOptions.classList.toggle('hidden');
+        });
+
+        // File Upload
+        fileUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                appendMessage('You', `Uploading file: <em>${file.name}</em>`, false, false, true);
+                appendMessage('You', `Uploading file: <em>${file.name}</em>`, false, true);
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                fetch('/chatbot/api/photo', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error('Upload failed');
+                    return res.json();
+                })
+                .then(data => {
+                    appendMessage('Plato', data.message || 'File uploaded successfully.', true);
+                })
+                .catch(err => {
+                    console.error('Upload error:', err);
+                    appendMessage('Plato', `Failed to upload file: ${err.message}`, true);
+                });
+
+                fileOptions.classList.add('hidden');
+            }
+        });
+
+        // Take Photo
+        takePhoto.addEventListener('click', () => {
+            html2canvas(document.body).then(canvas => {
+                canvas.toBlob(blob => {
+                    const formData = new FormData();
+                    formData.append('file', blob, 'photo.png');
+                    appendMessage('You', 'Uploading photo...', false, false, true);
+                    appendMessage('You', 'Uploading photo...', false, true);
+
+                    fetch('/chatbot/api/photo', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('Upload failed');
+                        return res.json();
+                    })
+                    .then(data => {
+                        appendMessage('Plato', data.message || 'Photo uploaded successfully.', true);
+                    })
+                    .catch(err => {
+                        console.error('Upload error:', err);
+                        appendMessage('Plato', `Failed to upload photo: ${err.message}`, true);
+                    });
+                });
+            });
+            fileOptions.classList.add('hidden');
+        });
+
+        // Hide file options and history actions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!addFiles.contains(e.target) && !fileOptions.contains(e.target)) {
+                fileOptions.classList.add('hidden');
+            }
+            if (!historyActionsBtn.contains(e.target) && !historyActionsMenu.contains(e.target)) {
+                historyActionsMenu.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

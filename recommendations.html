@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIVivid - Security Recommendations</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#1E40AF',
+            dark: '#0F172A',
+            accent: '#a3c614',
+            ai: '#10B981',
+            threat: '#EF4444',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          animation: {
+            'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
+            'slide-in': 'slide-in 0.5s ease-out',
+          },
+          keyframes: {
+            'pulse-glow': {
+              '0%, 100%': { boxShadow: '0 0 5px rgba(59, 130, 246, 0.5)' },
+              '50%': { boxShadow: '0 0 20px rgba(59, 130, 246, 0.8)' },
+            },
+            'slide-in': {
+              '0%': { transform: 'translateX(-20px)', opacity: '0' },
+              '100%': { transform: 'translateX(0)', opacity: '1' },
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    .nav-item {
+      transition: all 0.3s ease;
+    }
+    .nav-item:hover {
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+    .nav-item.active {
+      background-color: rgba(59, 130, 246, 0.1);
+      border-left: 4px solid #3B82F6;
+      color: white !important;
+    }
+    .recommendation-card {
+      transition: all 0.3s ease;
+      border-radius: 12px;
+      background: linear-gradient(145deg, #1f2937, #111827);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .recommendation-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+    }
+    .ai-badge {
+      background-color: #10B981;
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+    .chart-container {
+      position: relative;
+      margin: auto;
+      height: 300px;
+      width: 300px;
+      padding: 16px;
+      border-radius: 12px;
+      background: transparent;
+    }
+    #severityChart {
+      position: relative;
+      z-index: 10;
+    }
+    #no-data-text {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: #9CA3AF;
+      font-size: 0.875rem;
+      font-weight: 600;
+      z-index: 20;
+    }
+    @media (max-width: 640px) {
+      .chart-container {
+        height: 250px;
+        width: 250px;
+      }
+    }
+    .pagination-button {
+      transition: all 0.3s ease;
+    }
+    .pagination-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .timeline-container {
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: #3B82F6 #1F2A44;
+    }
+    .timeline-container::-webkit-scrollbar {
+      height: 8px;
+    }
+    .timeline-container::-webkit-scrollbar-thumb {
+      background: #3B82F6;
+      border-radius: 4px;
+    }
+    .timeline-container::-webkit-scrollbar-track {
+      background: #1F2A44;
+    }
+    .timeline-event {
+      transition: all 0.3s ease;
+      min-width: 200px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .timeline-event:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
+    }
+    .timeline-dot {
+      transition: all 0.3s ease;
+    }
+    .timeline-dot:hover {
+      transform: scale(1.3);
+    }
+    .filter-active {
+      border-color: #3B82F6;
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+    .action-button {
+      transition: all 0.3s ease;
+    }
+    .action-button:hover {
+      transform: scale(1.05);
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #1F2A44 25%, #2D3A55 50%, #1F2A44 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+    }
+    @keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .toast {
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      transform: translateY(100px);
+    }
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: #1E293B;
+      padding: 24px;
+      border-radius: 8px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    }
+  </style>
+</head>
+<body class="bg-dark text-white font-sans">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-64 bg-dark border-r border-gray-800">
+      <div class="p-6">
+        <div class="flex items-center">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="AIVivid Logo" class="h-8 w-auto" />
+          <span class="ml-2 text-xl font-bold text-accent">AIVivid</span>
+        </div>
+      </div>
+      <nav class="mt-6 flex flex-col h-[calc(100%-80px)]">
+        <div class="px-4 space-y-2 flex-grow">
+          <a href="{{ url_for('user_dashboard.user_dashboard') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+            Dashboard
+          </a>
+          <a href="{{ url_for('security_scan.security_scan_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            </svg>
+            Security Scan
+          </a>
+          <a href="{{ url_for('alerts.user_security_alerts') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.072 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+            Security Alerts
+          </a>
+          <a href="{{ url_for('security_recommendations.recommendations_page') }}" class="nav-item active flex items-center px-4 py-3 text-white bg-[#1E40AF] hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2l4 -4M12 22C7.03 20.94 4 16.5 4 12V6l8-4l8 4v6c0 4.5-3 8.94-8 10z"/>
+            </svg>
+            Security Recommendations
+          </a>
+          <a href="{{ url_for('ml_features.ml_features_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9h6v6H9V9zM4 4v4m0 8v4m4 4h4m8-4v-4m0-8V4m-4-4h-4M4 12H2m20 0h-2M12 4V2m0 20v-2" />
+            </svg>
+            ML Features
+          </a>
+          <a href="{{ url_for('threat.threat_details_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            Threat Details
+          </a>
+          <a href="{{ url_for('model.model_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 16v-2m8-6h2M2 12H4m14.828-5.172l1.414 1.414M4.757 19.243l1.414-1.414M19.243 19.243l-1.414-1.414M4.757 4.757L6.172 6.17M9 12a3 3 0 006 0 3 3 0 00-6 0z"/>
+            </svg>
+            Model
+          </a>
+          <a href="{{ url_for('monitoring.monitoring_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 014-4h3m-7 6v2m0 0a2 2 0 01-2 2H6a2 2 0 01-2-2v-2a2 2 0 012-2h1m6-6V7a2 2 0 012-2h2a2 2 0 012 2v2"/>
+            </svg>
+            Monitoring
+          </a>
+          <a href="{{ url_for('blog.blog_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h7l2 2h5a2 2 0 012 2v12a2 2 0 01-2 2z"/>
+            </svg>
+            Blog
+          </a>
+        </div>
+        <div class="px-4 pb-4">
+          <a href="{{ url_for('index') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Return to Home
+          </a>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-y-auto">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+          <div class="flex items-center">
+            <a href="{{ url_for('user_dashboard.user_dashboard') }}" class="text-gray-400 hover:text-white mr-4" aria-label="Back to Dashboard">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </a>
+            <h1 class="text-3xl font-bold gradient-text">AI-Powered Security Recommendations</h1>
+          </div>
+          <div class="flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0">
+            <select id="categoryFilter" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" aria-label="Category Filter">
+              <option value="all">All Categories</option>
+              <option value="network">Network</option>
+              <option value="system">System</option>
+              <option value="user">User</option>
+            </select>
+            <select id="sortByFilter" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" aria-label="Sort By">
+              <option value="Severity_score">Severity</option>
+              <option value="impact_score">Impact Score</option>
+              <option value="created_at">Created At</option>
+            </select>
+            <select id="sortOrderFilter" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" aria-label="Sort Order">
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
+            </select>
+            <button onclick="exportReport()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium flex items-center action-button" aria-label="Export Report">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Export Report
+            </button>
+          </div>
+        </div>
+
+        <!-- Filters for Date Range -->
+        <div class="mb-6 flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0">
+          <input id="dateFromFilter" type="date" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="From Date" aria-label="From Date" />
+          <input id="dateToFilter" type="date" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="To Date" aria-label="To Date" />
+          <button onclick="loadRecommendations()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium action-button" aria-label="Apply Filters">Apply Filters</button>
+          <button onclick="resetFilters()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-md text-sm font-medium action-button" aria-label="Reset Filters">Reset Filters</button>
+        </div>
+
+        <!-- Admin Create Recommendation Form -->
+        {% if current_user.role == 'admin' %}
+        <div class="mb-8 bg-gray-800 rounded-lg p-6">
+          <h2 class="text-xl font-semibold mb-4">Create New AI-Enhanced Recommendation</h2>
+          <form id="createRecommendationForm" class="space-y-4">
+            <div>
+              <label for="recTitle" class="block text-sm font-medium text-gray-300">Title</label>
+              <input id="recTitle" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" required aria-label="Recommendation Title" />
+            </div>
+            <div>
+              <label for="recContent" class="block text-sm font-medium text-gray-300">Content (Optional: AI will enhance)</label>
+              <textarea id="recContent" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" rows="4" aria-label="Recommendation Content"></textarea>
+            </div>
+            <div>
+              <label for="recCategory" class="block text-sm font-medium text-gray-300">Category</label>
+              <select id="recCategory" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" aria-label="Recommendation Category">
+                <option value="network">Network</option>
+                <option value="system">System</option>
+                <option value="user">User</option>
+              </select>
+            </div>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium action-button" aria-label="Create Recommendation">Create Recommendation</button>
+          </form>
+        </div>
+        {% endif %}
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="hidden text-center text-gray-400 my-4">
+          <svg class="animate-spin inline-block w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Loading AI recommendations...
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white p-4 rounded-lg shadow-lg opacity-0 toast">
+          <span id="toastMessage"></span>
+          <button onclick="hideToast()" class="ml-4 text-gray-400 hover:text-white" aria-label="Close Toast">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <!-- Recommendations Overview -->
+          <div class="bg-gray-800 rounded-lg p-6 col-span-2">
+            <h2 class="text-xl font-semibold mb-4">AI-Powered Recommended Actions</h2>
+            <div id="recommendations-container" class="space-y-6"></div>
+            <!-- Pagination Controls -->
+            <div id="pagination-controls" class="mt-6 flex justify-between items-center">
+              <button id="prevPage" class="pagination-button bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50" disabled aria-label="Previous Page">Previous</button>
+              <span id="pageInfo" class="text-sm text-gray-400"></span>
+              <button id="nextPage" class="pagination-button bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50" disabled aria-label="Next Page">Next</button>
+            </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="space-y-6">
+            <div class="bg-gray-800 rounded-lg p-6">
+              <h2 class="text-xl font-semibold mb-4">Severity Distribution</h2>
+              <div class="chart-container">
+                <canvas id="severityChart" width="300" height="300" role="img" aria-label="Severity Distribution Pie Chart"></canvas>
+                <div id="no-data-text" class="absolute inset-0 flex items-center justify-center text-gray-300 text-sm font-semibold" style="display: none;">No Data Available</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="bg-gray-800 rounded-lg p-6">
+          <h2 class="text-xl font-semibold mb-4">Recommendation & Threat Timeline</h2>
+          <div class="timeline-container flex space-x-4 py-4">
+            <div id="recommendation-timeline" class="flex space-x-4"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <script>
+    let currentPage = 1;
+    const perPage = 10;
+    let voiceEnabled = true;
+
+    // Helper to format datetime
+    function formatTime(isoString) {
+      if (!isoString || isoString === 'N/A') return 'N/A';
+      const date = new Date(isoString);
+      return date.toLocaleString('en-US', { timeZone: 'UTC', dateStyle: 'medium', timeStyle: 'short' });
+    }
+
+    // Show toast notification
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toastMessage');
+      toastMessage.textContent = message;
+      toast.className = `fixed bottom-4 right-4 p-4 rounded-lg shadow-lg toast show ${isError ? 'bg-red-600' : 'bg-gray-800'}`;
+      setTimeout(hideToast, 5000);
+    }
+
+    // Hide toast
+    function hideToast() {
+      const toast = document.getElementById('toast');
+      toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white p-4 rounded-lg shadow-lg opacity-0 toast';
+    }
+
+    // Speak recommendation or alert
+    function speakRecommendation(text) {
+      if (!voiceEnabled || !('speechSynthesis' in window)) {
+        if (!('speechSynthesis' in window)) showToast('Voice synthesis not supported in this browser. Try Chrome or Edge.', true);
+        return;
+      }
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.voice = speechSynthesis.getVoices().find(voice => voice.name.includes('Google') || voice.default);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 0.9;
+      speechSynthesis.speak(utterance);
+    }
+
+    // Poll for voice alert for new threats
+    async function checkForThreats() {
+      try {
+        const res = await fetch('/user/security_recommendations/recommendations/voice-alert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ threat_description: 'Check for new threats' }),
+          credentials: 'include'
+        });
+        if (!res.ok) return;
+        const { alert_text } = await res.json();
+        if (alert_text) {
+          showToast('New threat alert triggered!');
+          speakRecommendation(alert_text);
+        }
+      } catch (error) {
+        console.error('Error fetching voice alert:', error);
+      }
+    }
+
+    // Update filter styles
+    function updateFilterStyles() {
+      const categoryFilter = document.getElementById('categoryFilter');
+      const dateFromFilter = document.getElementById('dateFromFilter');
+      const dateToFilter = document.getElementById('dateToFilter');
+      categoryFilter.classList.toggle('filter-active', categoryFilter.value !== 'all');
+      dateFromFilter.classList.toggle('filter-active', dateFromFilter.value);
+      dateToFilter.classList.toggle('filter-active', dateToFilter.value);
+    }
+
+    // Reset filters
+    function resetFilters() {
+      document.getElementById('categoryFilter').value = 'all';
+      document.getElementById('sortByFilter').value = 'severity';
+      document.getElementById('sortOrderFilter').value = 'desc';
+      document.getElementById('dateFromFilter').value = '';
+      document.getElementById('dateToFilter').value = '';
+      currentPage = 1;
+      updateFilterStyles();
+      loadRecommendations();
+    }
+
+    // Create new recommendation
+    async function createRecommendation(event) {
+      event.preventDefault();
+      try {
+        document.getElementById('loading').classList.remove('hidden');
+        const title = document.getElementById('recTitle').value;
+        const content = document.getElementById('recContent').value;
+        const category = document.getElementById('recCategory').value;
+        const payload = { title, content, category };
+        const res = await fetch('/user/security_recommendations/api/recommendations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          credentials: 'include'
+        });
+        if (!res.ok) throw new Error('Failed to create recommendation');
+        const response = await res.json();
+        if (response.status === 'success') {
+          showToast('Recommendation created successfully!');
+          document.getElementById('createRecommendationForm').reset();
+          loadRecommendations();
+        } else {
+          throw new Error(response.error || 'Unknown error');
+        }
+      } catch (error) {
+        console.error('Error creating recommendation:', error);
+        showToast(`Error: ${error.message}`, true);
+      } finally {
+        document.getElementById('loading').classList.add('hidden');
+      }
+    }
+
+    // Fetch recommendations and analyze
+    async function loadRecommendations(severityFilter = null) {
+      try {
+        document.getElementById('loading').classList.remove('hidden');
+        document.getElementById('recommendations-container').innerHTML = '<div class="skeleton w-full h-32 rounded-lg"></div>'.repeat(3);
+
+        const category = document.getElementById('categoryFilter').value;
+        const sortBy = document.getElementById('sortByFilter').value;
+        const sortOrder = document.getElementById('sortOrderFilter').value;
+        const dateFrom = document.getElementById('dateFromFilter').value;
+        const dateTo = document.getElementById('dateToFilter').value;
+
+        const payload = { category, sort_by: sortBy, sort_order: sortOrder, page: currentPage, per_page: perPage };
+        if (dateFrom) payload.date_from = new Date(dateFrom).toISOString();
+        if (dateTo) payload.date_to = new Date(dateTo).toISOString();
+        if (severityFilter) payload.severity_filter = severityFilter;
+
+        const res = await fetch('/user/security_recommendations/api/recommendations/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          credentials: 'include'
+        });
+        if (!res.ok) throw new Error(`Failed to fetch recommendations: ${res.statusText}`);
+        const response = await res.json();
+        if (response.status !== 'success') throw new Error(response.error || 'Unknown error');
+
+        const { recommendations, summary } = response.data;
+
+        // Auto-speak critical/high severity recommendations
+        recommendations.forEach(rec => {
+          if ((rec.severity === 'Critical' || rec.severity === 'High') && rec.ai_generated) {
+            speakRecommendation(rec.content);
+          }
+        });
+
+        // Render recommendations
+        const container = document.getElementById('recommendations-container');
+        container.innerHTML = recommendations.length ? recommendations.map((rec, index) => `
+    <div class="recommendation-card p-6 rounded-lg border border-gray-800 hover:border-primary transition duration-300 animate-slide-in" data-rec-id="${rec.id}">
+      <div class="flex items-center mb-4">
+        <div class="w-8 h-8 rounded-full ${rec.severity === 'Critical' ? 'bg-red-600' : rec.severity === 'High' ? 'bg-orange-500' : rec.severity === 'Medium' ? 'bg-yellow-500' : 'bg-green-500'} flex items-center justify-center mr-4">
+          <span class="text-white font-bold">${(currentPage - 1) * perPage + index + 1}</span>
+        </div>
+        <h3 class="text-lg font-semibold">${rec.title}</h3>
+        ${rec.ai_generated ? '<span class="ml-2 px-2 py-1 text-xs font-medium text-white ai-badge rounded">AI</span>' : ''}
+      </div>
+      <p class="text-gray-300 mb-4">${rec.content}</p>
+      <div class="flex justify-between items-center mb-4">
+        <span class="px-2 py-1 text-xs font-medium ${rec.severity === 'Critical' ? 'bg-red-600' : rec.severity === 'High' ? 'bg-orange-500' : rec.severity === 'Medium' ? 'bg-yellow-500' : 'bg-green-500'} rounded">
+          ${rec.severity} Severity
+        </span>
+        <span class="text-sm text-gray-400">Category: ${rec.category}</span>
+      </div>
+      <div class="mt-2 text-sm text-gray-400">Impact Score: ${rec.impact_score}/10</div>
+      <div class="mt-2 text-sm text-gray-400">Created: ${formatTime(rec.created_at)}</div>
+      <div class="mt-4 flex space-x-2">
+        <button onclick="speakRecommendation('${rec.content.replace(/'/g, "\\'")}')" class="action-button bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded-md text-sm font-medium flex items-center">
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a8 8 0 100-2m-8 5V7m4 0v4m-4 0h4" />
+          </svg>
+          Speak
+        </button>
+      </div>
+    </div>
+  `).join('') : '<div class="text-gray-400 text-center">No recommendations found for the selected filters.</div>';
+
+        updatePagination(summary.pagination);
+        initializeseverityChart(summary);
+        updateTimeline();
+        updateFilterStyles();
+      } catch (error) {
+        console.error('Error loading recommendations:', error);
+        document.getElementById('recommendations-container').innerHTML = '<div class="text-red-400 text-center">Error loading recommendations. Please try again later.</div>';
+        showToast('Error loading recommendations.', true);
+      } finally {
+        document.getElementById('loading').classList.add('hidden');
+      }
+    }
+
+    // Pagination
+    function updatePagination(pagination) {
+      const pageInfo = document.getElementById('pageInfo');
+      pageInfo.textContent = `Page ${pagination.page} of ${pagination.total_pages} (${pagination.total_items} items)`;
+      document.getElementById('prevPage').disabled = pagination.page === 1;
+      document.getElementById('nextPage').disabled = pagination.page === pagination.total_pages;
+      document.getElementById('prevPage').onclick = () => { if(currentPage > 1){ currentPage--; loadRecommendations(); } };
+      document.getElementById('nextPage').onclick = () => { if(currentPage < pagination.total_pages){ currentPage++; loadRecommendations(); } };
+    }
+
+    // Initialize severity chart
+    async function initializeSeverityChart(summary) {
+      const noDataText = document.getElementById('no-data-text');
+      const canvas = document.getElementById('severityChart');
+
+      if (!window.Chart || !window.ChartDataLabels) {
+        console.error('Chart.js or ChartDataLabels plugin not loaded');
+        noDataText.style.display = 'flex';
+        noDataText.textContent = 'Chart library not loaded';
+        return;
+      }
+
+      if (!canvas) {
+        console.error('Canvas element not found');
+        noDataText.style.display = 'flex';
+        noDataText.textContent = 'Chart canvas not found';
+        return;
+      }
+
+      const ctx = canvas.getContext('2d');
+
+      // Destroy previous chart if exists
+      if (window.severityChart) window.severityChart.destroy();
+
+      try {
+        const res = await fetch('/user/security_recommendations/api/recommendations/severity-distribution', {
+          method: 'GET',
+          credentials: 'include'
+        });
+
+        if (!res.ok) throw new Error(`API error: ${res.statusText}`);
+
+        const response = await res.json();
+        if (response.status !== 'success') throw new Error(response.error || 'Unknown error');
+
+        const { distribution = {} } = response.data || {};
+        const data = [
+          distribution.Critical || 0,
+          distribution.High || 0,
+          distribution.Medium || 0,
+          distribution.Low || 0
+        ];
+        const total = data.reduce((a, b) => a + b, 0);
+
+        if (total === 0) {
+          noDataText.style.display = 'flex';
+          noDataText.textContent = 'No Data Available';
+          return;
+        } else {
+          noDataText.style.display = 'none';
+        }
+
+        window.severityChart = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: ['Critical', 'High', 'Medium', 'Low'],
+            datasets: [{
+              data,
+              backgroundColor: ['#FF0000', '#FF4D4D', '#FFD700', '#87CEEB'],
+              borderColor: ['#B31212', '#B31212', '#B8860B', '#4682B4'],
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                onClick: (e, legendItem) => {
+                  const severityMap = { 0: 'Critical', 1: 'High', 2: 'Medium', 3: 'Low' };
+                  loadRecommendations(severityMap[legendItem.index]); // optional: filter by severity
+                  showToast(`Filtering by ${severityMap[legendItem.index]} severity`);
+                }
+              },
+              datalabels: {
+                color: '#fff',
+                formatter: (value) => total > 0 ? `${((value / total) * 100).toFixed(1)}%` : ''
+              }
+            }
+          },
+          plugins: [ChartDataLabels]
+        });
+
+      } catch (error) {
+        console.error('Error initializing severity chart:', error);
+        noDataText.style.display = 'flex';
+        noDataText.textContent = 'Error loading chart data';
+        showToast('Failed to load severity chart.', true);
+      }
+}
+
+
+    // Timeline
+    async function updateTimeline() {
+      try {
+        const res = await fetch('/user/security_recommendations/api/recommendations/timeline', {method:'GET', credentials:'include'});
+        const response = await res.json();
+        const { recommendations=[], threats=[] } = response.data;
+        const events = [];
+        recommendations.forEach(r=>events.push({timestamp:r.date, description:`Recommendation: ${r.count}`, type:'recommendation', details:`Count: ${r.count}`}));
+        threats.forEach(t=>events.push({timestamp:t.date, description:`Threat: ${t.count}`, type:'threat', details:`Count: ${t.count}`}));
+        events.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+        const timeline = document.getElementById('recommendation-timeline');
+        timeline.innerHTML = events.length?events.map((event,i)=>`
+          <div class="timeline-event bg-gray-900 p-4 rounded-lg relative animate-slide-in" style="animation-delay:${i*0.1}s" data-type="${event.type}" onclick="toggleTimelineDetails(this)">
+            <div class="absolute top-4 -left-2 w-3 h-3 rounded-full ${event.type==='threat'?'bg-threat':'bg-blue-500'}"></div>
+            <div class="text-sm text-gray-400">${formatTime(event.timestamp)}</div>
+            <div class="text-white font-medium">${event.description}</div>
+            <div class="timeline-details hidden mt-2 text-sm text-gray-300">${event.details}</div>
+          </div>`).join(''):'<div class="text-gray-400 text-center">No timeline events available.</div>';
+      } catch(e){ console.error(e); }
+    }
+
+    function toggleTimelineDetails(el){ el.querySelector('.timeline-details').classList.toggle('hidden'); if(!el.querySelector('.timeline-details').classList.contains('hidden')) el.scrollIntoView({behavior:'smooth', inline:'center'}); }
+
+    // Export CSV
+    async function exportReport() {
+      try {
+        document.getElementById('loading').classList.remove('hidden');
+        const category = document.getElementById('categoryFilter').value;
+        const dateFrom = document.getElementById('dateFromFilter').value;
+        const dateTo = document.getElementById('dateToFilter').value;
+        const payload={category};
+        if(dateFrom) payload.date_from=new Date(dateFrom).toISOString();
+        if(dateTo) payload.date_to=new Date(dateTo).toISOString();
+        const res=await fetch('/user/security_recommendations/api/recommendations/analyze',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), credentials:'include'});
+        const response=await res.json();
+        const recommendations=response.data.recommendations;
+        const headers=['ID','Title','Category','severity Score','Impact Score','Created At','AI Generated','Related Events','Related Threats','Related Predictions'];
+        const csvRows=[headers.join(',')];
+        recommendations.forEach(rec=>{
+          const row=[rec.id, `"${rec.title.replace(/"/g,'""')}"`, rec.category, rec.severity_score, rec.impact_score, `"${rec.created_at}"`, rec.ai_generated?'Yes':'No', `"${rec.related_events.map(e=>`${e.event_type} (${e.severity})`).join('; ')}"`, `"${rec.related_threats.map(t=>`${t.name} (${t.severity})`).join('; ')}"`, `"${rec.related_predictions.map(p=>`${p.predicted_level} (${p.confidence_score.toFixed(2)})`).join('; ')}"`];
+          csvRows.push(row.join(','));
+        });
+        const blob=new Blob([csvRows.join('\n')], {type:'text/csv'});
+        const url=window.URL.createObjectURL(blob);
+        const a=document.createElement('a'); a.href=url; a.download=`recommendations_report_${new Date().toISOString().split('T')[0]}.csv`; a.click();
+        window.URL.revokeObjectURL(url);
+        showToast('Report exported successfully!');
+      } catch(e){ console.error(e); showToast(`Error exporting report: ${e.message}`, true); }
+      finally{ document.getElementById('loading').classList.add('hidden'); }
+    }
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', () => {
+    // Initialize speech synthesis voices (preload)
+    if ('speechSynthesis' in window) {
+        speechSynthesis.onvoiceschanged = () => {
+            speechSynthesis.getVoices();
+        };
+    }
+
+    // Attach create recommendation form handler (if exists)
+    const createForm = document.getElementById('createRecommendationForm');
+    if (createForm) {
+        createForm.addEventListener('submit', createRecommendation);
+    }
+
+    // Load initial recommendations
+    loadRecommendations();
+
+    // Initialize severity chart
+    initializeSeverityChart();
+
+    // Set interval to poll for voice alerts every 30 seconds
+    setInterval(checkForThreats, 30000);
+
+    // Update filter styles on change
+    document.getElementById('categoryFilter').addEventListener('change', () => {
+        updateFilterStyles();
+        currentPage = 1;
+        loadRecommendations();
+    });
+    document.getElementById('sortByFilter').addEventListener('change', () => loadRecommendations());
+    document.getElementById('sortOrderFilter').addEventListener('change', () => loadRecommendations());
+    document.getElementById('dateFromFilter').addEventListener('change', updateFilterStyles);
+    document.getElementById('dateToFilter').addEventListener('change', updateFilterStyles);
+});
+
+  </script>
+</body>
+</html>

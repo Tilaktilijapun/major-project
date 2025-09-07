@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIVivid - System Monitoring</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.7.5/dist/socket.io.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#1E40AF',
+            dark: '#0F172A',
+            accent: '#a3c614',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    .nav-item {
+      transition: all 0.3s ease;
+    }
+    .nav-item:hover {
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+    .nav-item.active {
+      background-color: rgba(59, 130, 246, 0.1);
+      border-left: 3px solid #3B82F6;
+      color: white !important;
+    }
+    .monitor-card {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.5s ease;
+    }
+    .monitor-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .monitor-card:hover {
+      transform: translateY(-5px);
+      border-color: #3B82F6;
+      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+    }
+    .gradient-text {
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      background-image: linear-gradient(90deg, #3B82F6, #a3c614);
+    }
+    .chart-container {
+      position: relative;
+      margin: auto;
+      height: 250px;
+      width: 250px;
+      max-width: 100%;
+    }
+    .curved-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+    .activity-log-item {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .activity-log-item:hover {
+      background-color: rgba(59, 130, 246, 0.1);
+      transform: translateX(10px);
+    }
+    .modal {
+      transition: opacity 0.3s ease;
+    }
+    .modal-content {
+      transform: scale(0.8);
+      transition: transform 0.3s ease;
+    }
+    .modal.active .modal-content {
+      transform: scale(1);
+    }
+    .counter {
+      transition: all 1s ease-in-out;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    .pulse-animation {
+      animation: pulse 2s infinite;
+    }
+    .action-button {
+      transition: all 0.3s ease;
+    }
+    .action-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+    }
+    .action-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body class="bg-dark text-white font-sans">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-64 bg-dark border-r border-gray-800">
+      <div class="p-6">
+        <div class="flex items-center">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="AIVivid Logo" class="h-8 w-auto" />
+          <span class="ml-2 text-xl font-bold text-accent">AIVivid</span>
+        </div>
+      </div>
+      <nav class="mt-6 flex flex-col h-[calc(100%-80px)]">
+        <div class="px-4 space-y-2 flex-grow">
+          <a href="{{ url_for('user_dashboard.user_dashboard') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+            Dashboard
+          </a>
+          <a href="{{ url_for('security_scan.security_scan_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            </svg>
+            Security Scan
+          </a>
+          <a href="{{ url_for('alerts.user_security_alerts') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.072 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+            Security Alerts
+          </a>
+          <a href="{{ url_for('security_recommendations.recommendations_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2l4 -4M12 22C7.03 20.94 4 16.5 4 12V6l8-4l8 4v6c0 4.5-3 8.94-8 10z"/>
+            </svg>
+            Security Recommendations
+          </a>
+          <a href="{{ url_for('ml_features.ml_features_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9h6v6H9V9zM4 4v4m0 8v4m4 4h4m8-4v-4m0-8V4m-4-4h-4M4 12H2m20 0h-2M12 4V2m0 20v-2" />
+            </svg>
+            ML Features
+          </a>
+          <a href="{{ url_for('threat.threat_details_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            Threat Details
+          </a>
+          <a href="{{ url_for('model.model_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 16v-2m8-6h2M2 12H4m14.828-5.172l1.414 1.414M4.757 19.243l1.414-1.414M19.243 19.243l-1.414-1.414M4.757 4.757L6.172 6.17M9 12a3 3 0 006 0 3 3 0 00-6 0z"/>
+            </svg>
+            Model
+          </a>
+          <a href="{{ url_for('monitoring.monitoring_page') }}" class="nav-item active flex items-center px-4 py-3 text-white bg-[#1E40AF] hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 014-4h3m-7 6v2m0 0a2 2 0 01-2 2H6a2 2 0 01-2-2v-2a2 2 0 012-2h1m6-6V7a2 2 0 012-2h2a2 2 0 012 2v2"/>
+            </svg>
+            Monitoring
+          </a>
+          <a href="{{ url_for('blog.blog_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h7l2 2h5a2 2 0 012 2v12a2 2 0 01-2 2z"/>
+            </svg>
+            Blog
+          </a>
+        </div>
+        <div class="px-4 pb-4">
+          <a href="{{ url_for('index') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Return to Home
+          </a>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-y-auto">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative">
+        <!-- Curved Background SVG -->
+        <svg class="curved-bg" viewBox="0 0 1440 320">
+          <path fill="rgba(59, 130, 246, 0.1)" d="M0,160L48,138.7C96,117,192,75,288,69.3C384,64,480,96,576,122.7C672,149,768,171,864,160C960,149,1056,107,1152,85.3C1248,64,1344,64,1392,64L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+        </svg>
+        
+        <div class="flex items-center justify-between mb-8">
+          <div class="flex items-center">
+            <a href="{{ url_for('user_dashboard.user_dashboard') }}" class="text-gray-400 hover:text-white mr-4">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </a>
+            <h1 class="text-3xl font-bold gradient-text">System Monitoring</h1>
+          </div>
+          <div class="flex space-x-4">
+            <button id="toggle-monitoring" class="action-button bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-md text-sm font-medium flex items-center">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Start Monitoring
+            </button>
+            <button onclick="exportReport()" class="action-button bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium flex items-center">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Export Report
+            </button>
+            <button onclick="configureAlerts()" class="action-button bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium flex items-center">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z"/>
+              </svg>
+              Configure Alerts
+            </button>
+          </div>
+        </div>
+
+        <!-- System Metrics -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div class="col-span-2 space-y-6">
+            <h2 class="text-xl font-semibold mb-4">System Metrics</h2>
+            <div class="monitor-card bg-dark p-6 rounded-lg border border-gray-800">
+              <div class="flex items-center mb-4">
+                <div class="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center mr-4 pulse-animation">
+                  <span class="text-white font-bold">1</span>
+                </div>
+                <h3 class="text-lg font-semibold">CPU Usage</h3>
+              </div>
+              <p class="text-gray-300">Monitor CPU utilization across all servers to detect potential performance bottlenecks.</p>
+              <div class="mt-4 flex justify-between items-center">
+                <span id="cpu-status" class="px-2 py-1 text-xs font-medium bg-red-500 rounded">High</span>
+                <span id="cpu-value" class="text-sm text-gray-400 counter" data-target="0">0%</span>
+              </div>
+              <p class="text-gray-400 mt-2 text-sm">User: <span id="cpu-user" class="counter" data-target="0">0s</span>, System: <span id="cpu-system" class="counter" data-target="0">0s</span>, Idle: <span id="cpu-idle" class="counter" data-target="0">0s</span></p>
+            </div>
+            <div class="monitor-card bg-dark p-6 rounded-lg border border-gray-800">
+              <div class="flex items-center mb-4">
+                <div class="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center mr-4 pulse-animation">
+                  <span class="text-white font-bold">2</span>
+                </div>
+                <h3 class="text-lg font-semibold">Memory Usage</h3>
+              </div>
+              <p class="text-gray-300">Track memory usage to identify potential memory leaks or resource constraints.</p>
+              <div class="mt-4 flex justify-between items-center">
+                <span id="memory-status" class="px-2 py-1 text-xs font-medium bg-yellow-500 rounded">Medium</span>
+                <span id="memory-value" class="text-sm text-gray-400 counter abuser" data-target="0">0%</span>
+              </div>
+              <p class="text-gray-400 mt-2 text-sm">Virtual: <span id="memory-virtual" class="counter" data-target="0">0 MB</span>, Swap: <span id="memory-swap" class="counter" data-target="0">0 MB</span></p>
+            </div>
+            <div class="monitor-card bg-dark p-6 rounded-lg border border-gray-800">
+              <div class="flex items-center mb-4">
+                <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center mr-4 pulse-animation">
+                  <span class="text-white font-bold">3</span>
+                </div>
+                <h3 class="text-lg font-semibold">Disk I/O</h3>
+              </div>
+              <p class="text-gray-300">Monitor disk read/write operations to assess storage performance.</p>
+              <div class="mt-4 flex justify-between items-center">
+                <span id="disk-status" class="px-2 py-1 text-xs font-medium bg-blue-500 rounded">Low</span>
+                <span id="disk-value" class="text-sm text-gray-400 counter" data-target="0">0 IOPS</span>
+              </div>
+              <p class="text-gray-400 mt-2 text-sm">Read: <span id="disk-read" class="counter" data-target="0">0 MB</span>, Write: <span id="disk-write" class="counter" data-target="0">0 MB</span></p>
+            </div>
+            <div class="monitor-card bg-dark p-6 rounded-lg border border-gray-800">
+              <div class="flex items-center mb-4">
+                <div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center mr-4 pulse-animation">
+                  <span class="text-white font-bold">4</span>
+                </div>
+                <h3 class="text-lg font-semibold">System Temperature</h3>
+              </div>
+              <p class="text-gray-300">Monitor system temperature to prevent overheating issues.</p>
+              <div class="mt-4 flex justify-between items-center">
+                <span id="temp-status" class="px-2 py-1 text-xs font-medium bg-blue-500 rounded">Normal</span>
+                <span id="temp-value" class="text-sm text-gray-400 counter" data-target="0">0°C</span>
+              </div>
+            </div>
+            <div class="monitor-card bg-dark p-6 rounded-lg border border-gray-800">
+              <div class="flex items-center mb-4">
+                <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center mr-4 pulse-animation">
+                  <span class="text-white font-bold">5</span>
+                </div>
+                <h3 class="text-lg font-semibold">Network I/O</h3>
+              </div>
+              <p class="text-gray-300">Track network interface statistics for performance and security analysis.</p>
+              <div class="mt-4 flex justify-between items-center">
+                <span id="network-status" class="px-2 py-1 text-xs font-medium bg-green-500 rounded">Low</span>
+                <span id="network-value" class="text-sm text-gray-400 counter" data-target="0">0 MB/s</span>
+              </div>
+              <p class="text-gray-400 mt-2 text-sm">Sent: <span id="network-sent" class="counter" data-target="0">0 MB</span>, Received: <span id="network-recv" class="counter" data-target="0">0 MB</span></p>
+            </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="space-y-6">
+            <div class="bg-gray-800 rounded-lg p-6">
+              <h2 class="text-xl font-semibold mb-4">CPU Core Usage</h2>
+              <div class="chart-container flex justify-center items-center">
+                <canvas id="cpuCoreChart" width="250" height="250"></canvas>
+              </div>
+              <div class="flex justify-center space-x-4 mt-4">
+                <div class="flex items-center">
+                  <span class="w-3 h-3 rounded-full bg-[#EF4444] mr-2"></span>
+                  <span class="text-sm text-gray-300">Core 1</span>
+                </div>
+                <div class="flex items-center">
+                  <span class="w-3 h-3 rounded-full bg-[#F59E0B] mr-2"></span>
+                  <span class="text-sm text-gray-300">Core 2</span>
+                </div>
+                <div class="flex items-center">
+                  <span class="w-3 h-3 rounded-full bg-[#3B82F6] mr-2"></span>
+                  <span class="text-sm text-gray-300">Core 3</span>
+                </div>
+                <div class="flex items-center">
+                  <span class="w-3 h-3 rounded-full bg-[#10B981] mr-2"></span>
+                  <span class="text-sm text-gray-300">Core 4</span>
+                </div>
+              </div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-6">
+              <h2 class="text-xl font-semibold mb-4">Network Traffic</h2>
+              <div class="chart-container flex justify-center items-center">
+                <canvas id="networkTrafficChart" width="250" height="250"></canvas>
+              </div>
+              <div class="flex justify-center space-x-4 mt-4">
+                <div class="flex items-center">
+                  <span class="w-3 h-3 rounded-full bg-[#10B981] mr-2"></span>
+                  <span class="text-sm text-gray-300">Sent</span>
+                </div>
+                <div class="flex items-center">
+                  <span class="w-3 h-3 rounded-full bg-[#3B82F6] mr-2"></span>
+                  <span class="text-sm text-gray-300">Received</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Real-Time Metrics Chart -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-8">
+          <h2 class="text-xl font-semibold mb-4">Real-Time System Metrics</h2>
+          <canvas id="metricsChart" height="200"></canvas>
+        </div>
+
+        <!-- Container Metrics -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-8">
+          <h2 class="text-xl font-semibold mb-4">Container Metrics</h2>
+          <div id="container-metrics" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="bg-gray-800 rounded-lg p-6 relative">
+          <svg class="curved-bg" viewBox="0 0 1440 200">
+            <path fill="rgba(59, 130, 246, 0.05)" d="M0,160L48,138.7C96,117,192,75,288,69.3C384,64,480,96,576,122.7C672,149,768,171,864,160C960,149,1056,107,1152,85.3C1248,64,1344,64,1392,64L1440,64L1440,200L1392,200C1344,200,1248,200,1152,200C1056,200,960,200,864,200C768,200,672,200,576,200C480,200,384,200,288,200C192,200,96,200,48,200L0,200Z"></path>
+          </svg>
+          <h2 class="text-xl font-semibold mb-4">Activity Log</h2>
+          <div class="relative max-h-96 overflow-y-auto">
+            <div class="absolute top-0 left-4 h-full w-0.5 bg-gray-700"></div>
+            <div id="activity-log" class="space-y-6 pl-12"></div>
+          </div>
+        </div>
+
+        <!-- Alert Configuration Modal -->
+        <div id="alert-config-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center modal">
+          <div class="bg-gray-800 rounded-lg p-6 max-w-lg w-full mx-4 modal-content">
+            <h2 class="text-xl font-semibold mb-4">Configure Alerts</h2>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Metric</label>
+                <select id="metric" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2">
+                  <option value="cpu-usage">CPU Usage</option>
+                  <option value="memory-usage">Memory Usage</option>
+                  <option value="disk-io">Disk I/O</option>
+                  <option value="network-io">Network I/O</option>
+                  <option value="system-temperature">System Temperature</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Threshold (%)</label>
+                <input id="threshold" type="number" min="0" max="100" step="0.1" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2" placeholder="Enter threshold value (0-100)" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Notification Method</label>
+                <select id="notification-method" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2">
+                  <option value="email">Email</option>
+                  <option value="sms">SMS</option>
+                  <option value="push">Push Notification</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Alert Frequency</label>
+                <select id="alert-frequency" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2">
+                  <option value="immediate">Immediate</option>
+                  <option value="hourly">Hourly</option>
+                  <option value="daily">Daily</option>
+                </select>
+              </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-4">
+              <button onclick="closeAlertConfigModal()" class="text-gray-400 hover:text-white px-4 py-2 rounded-md text-sm font-medium">Cancel</button>
+              <button onclick="saveAlertConfig()" class="action-button bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium">Save Configuration</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Confirmation Modal -->
+        <div id="confirm-monitoring-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center modal">
+          <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 modal-content">
+            <h2 class="text-xl font-semibold mb-4">Confirm Action</h2>
+            <p id="confirm-message" class="text-gray-300 mb-6"></p>
+            <div class="flex justify-end space-x-4">
+              <button onclick="cancelMonitoringAction()" class="text-gray-400 hover:text-white px-4 py-2 rounded-md text-sm font-medium">Cancel</button>
+              <button id="confirm-monitoring-btn" class="action-button bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-md text-sm font-medium">Confirm</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+    // Initialize SocketIO
+    const socket = io.connect('http://' + window.location.host, { transports: ['websocket'] });
+
+    // Time series data for charts
+    let timeSeries = {
+        cpu: Array(10).fill(0),
+        memory: Array(10).fill(0),
+        disk: Array(10).fill(0),
+        network: Array(10).fill(0),
+        temperature: Array(10).fill(0),
+        cpuCores: Array(4).fill().map(() => Array(10).fill(0)), // Assuming 4 cores
+        networkSent: Array(10).fill(0),
+        networkReceived: Array(10).fill(0),
+        labels: Array(10).fill().map((_, i) => `${i * 5}s`)
+    };
+
+    // Format timestamp
+    function formatTime(isoString) {
+        return new Date(isoString).toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' }).replace(',', '');
+    }
+
+    // Animated counters
+    function animateCounter(element, start, end, duration, suffix = '') {
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            const value = progress * (end - start) + start;
+            element.innerText = `${value.toFixed(1)}${suffix}`;
+            if (progress < 1) {
+                requestAnimationFrame(step);
+            }
+        };
+        requestAnimationFrame(step);
+    }
+
+    function animateCards() {
+        const cards = document.querySelectorAll('.monitor-card');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.classList.add('visible');
+            }, index * 200);
+        });
+    }
+
+    // Update system metrics
+    function updateSystemMetrics(data) {
+        console.log('Updating system metrics with:', data);
+        // CPU Usage
+        const cpuValue = data.cpu?.percent || 0;
+        const cpuStatus = cpuValue > 80 ? 'High' : cpuValue > 50 ? 'Medium' : 'Low';
+        document.getElementById('cpu-status').innerText = cpuStatus;
+        document.getElementById('cpu-status').className = `px-2 py-1 text-xs font-medium rounded ${cpuStatus === 'High' ? 'bg-red-500' : cpuStatus === 'Medium' ? 'bg-yellow-500' : 'bg-blue-500'}`;
+        animateCounter(document.getElementById('cpu-value'), parseFloat(document.getElementById('cpu-value').dataset.target || 0), cpuValue, 1000, '%');
+        document.getElementById('cpu-value').dataset.target = cpuValue;
+        animateCounter(document.getElementById('cpu-user'), parseFloat(document.getElementById('cpu-user').dataset.target || 0), data.cpu?.cpu_times?.user || 0, 1000, 's');
+        document.getElementById('cpu-user').dataset.target = data.cpu?.cpu_times?.user || 0;
+        animateCounter(document.getElementById('cpu-system'), parseFloat(document.getElementById('cpu-system').dataset.target || 0), data.cpu?.cpu_times?.system || 0, 1000, 's');
+        document.getElementById('cpu-system').dataset.target = data.cpu?.cpu_times?.system || 0;
+        animateCounter(document.getElementById('cpu-idle'), parseFloat(document.getElementById('cpu-idle').dataset.target || 0), data.cpu?.cpu_times?.idle || 0, 1000, 's');
+        document.getElementById('cpu-idle').dataset.target = data.cpu?.cpu_times?.idle || 0;
+
+        // Memory Usage
+        const memoryValue = data.memory?.virtual_memory?.percent || 0;
+        const memoryStatus = memoryValue > 80 ? 'High' : memoryValue > 50 ? 'Medium' : 'Low';
+        document.getElementById('memory-status').innerText = memoryStatus;
+        document.getElementById('memory-status').className = `px-2 py-1 text-xs font-medium rounded ${memoryStatus === 'High' ? 'bg-red-500' : memoryStatus === 'Medium' ? 'bg-yellow-500' : 'bg-blue-500'}`;
+        animateCounter(document.getElementById('memory-value'), parseFloat(document.getElementById('memory-value').dataset.target || 0), memoryValue, 1000, '%');
+        document.getElementById('memory-value').dataset.target = memoryValue;
+        animateCounter(document.getElementById('memory-virtual'), parseFloat(document.getElementById('memory-virtual').dataset.target || 0), (data.memory?.virtual_memory?.used || 0) / (1024 * 1024), 1000, ' MB');
+        document.getElementById('memory-virtual').dataset.target = (data.memory?.virtual_memory?.used || 0) / (1024 * 1024);
+        animateCounter(document.getElementById('memory-swap'), parseFloat(document.getElementById('memory-swap').dataset.target || 0), (data.memory?.swap_memory?.used || 0) / (1024 * 1024), 1000, ' MB');
+        document.getElementById('memory-swap').dataset.target = (data.memory?.swap_memory?.used || 0) / (1024 * 1024);
+
+        // Disk I/O
+        const diskValue = data.disk_io?.disk ? (data.disk_io.disk.read_count + data.disk_io.disk.write_count) : 0;
+        const diskStatus = diskValue > 100 ? 'High' : diskValue > 50 ? 'Medium' : 'Low';
+        document.getElementById('disk-status').innerText = diskStatus;
+        document.getElementById('disk-status').className = `px-2 py-1 text-xs font-medium rounded ${diskStatus === 'High' ? 'bg-red-500' : diskStatus === 'Medium' ? 'bg-yellow-500' : 'bg-blue-500'}`;
+        animateCounter(document.getElementById('disk-value'), parseFloat(document.getElementById('disk-value').dataset.target || 0), diskValue, 1000, ' IOPS');
+        document.getElementById('disk-value').dataset.target = diskValue;
+        animateCounter(document.getElementById('disk-read'), parseFloat(document.getElementById('disk-read').dataset.target || 0), (data.disk_io?.disk?.read_bytes || 0) / (1024 * 1024), 1000, ' MB');
+        document.getElementById('disk-read').dataset.target = (data.disk_io?.disk?.read_bytes || 0) / (1024 * 1024);
+        animateCounter(document.getElementById('disk-write'), parseFloat(document.getElementById('disk-write').dataset.target || 0), (data.disk_io?.disk?.write_bytes || 0) / (1024 * 1024), 1000, ' MB');
+        document.getElementById('disk-write').dataset.target = (data.disk_io?.disk?.write_bytes || 0) / (1024 * 1024);
+
+        // System Temperature
+        const tempValue = data.temperature || 45.0;
+        const tempStatus = tempValue > 80 ? 'High' : tempValue > 50 ? 'Medium' : 'Normal';
+        document.getElementById('temp-status').innerText = tempStatus;
+        document.getElementById('temp-status').className = `px-2 py-1 text-xs font-medium rounded ${tempStatus === 'High' ? 'bg-red-500' : tempStatus === 'Medium' ? 'bg-yellow-500' : 'bg-blue-500'}`;
+        animateCounter(document.getElementById('temp-value'), parseFloat(document.getElementById('temp-value').dataset.target || 0), tempValue, 1000, '°C');
+        document.getElementById('temp-value').dataset.target = tempValue;
+
+        // Network I/O
+        const networkValue = data.network_io?.network ? (data.network_io.network.bytes_sent + data.network_io.network.bytes_recv) / (1024 * 1024) : 0;
+        const networkStatus = networkValue > 100 ? 'High' : networkValue > 50 ? 'Medium' : 'Low';
+        document.getElementById('network-status').innerText = networkStatus;
+        document.getElementById('network-status').className = `px-2 py-1 text-xs font-medium rounded ${networkStatus === 'High' ? 'bg-red-500' : networkStatus === 'Medium' ? 'bg-yellow-500' : 'bg-blue-500'}`;
+        animateCounter(document.getElementById('network-value'), parseFloat(document.getElementById('network-value').dataset.target || 0), networkValue, 1000, ' MB/s');
+        document.getElementById('network-value').dataset.target = networkValue;
+        animateCounter(document.getElementById('network-sent'), parseFloat(document.getElementById('network-sent').dataset.target || 0), (data.network_io?.network?.bytes_sent || 0) / (1024 * 1024), 1000, ' MB');
+        document.getElementById('network-sent').dataset.target = (data.network_io?.network?.bytes_sent || 0) / (1024 * 1024);
+        animateCounter(document.getElementById('network-recv'), parseFloat(document.getElementById('network-recv').dataset.target || 0), (data.network_io?.network?.bytes_recv || 0) / (1024 * 1024), 1000, ' MB');
+        document.getElementById('network-recv').dataset.target = (data.network_io?.network?.bytes_recv || 0) / (1024 * 1024);
+
+        // Update time series
+        timeSeries.cpu.shift();
+        timeSeries.cpu.push(cpuValue);
+        timeSeries.memory.shift();
+        timeSeries.memory.push(memoryValue);
+        timeSeries.disk.shift();
+        timeSeries.disk.push(diskValue);
+        timeSeries.network.shift();
+        timeSeries.network.push(networkValue);
+        timeSeries.temperature.shift();
+        timeSeries.temperature.push(tempValue);
+        timeSeries.cpuCores.forEach((core, i) => {
+            core.shift();
+            core.push(data.cpu?.per_cpu?.[i]?.percent || 0);
+        });
+        timeSeries.networkSent.shift();
+        timeSeries.networkSent.push((data.network_io?.network?.bytes_sent || 0) / (1024 * 1024));
+        timeSeries.networkReceived.shift();
+        timeSeries.networkReceived.push((data.network_io?.network?.bytes_recv || 0) / (1024 * 1024));
+        initializeMetricsChart();
+        updateCpuCoreChart();
+        updateNetworkTrafficChart();
+    }
+
+    // Update container metrics
+    function updateContainerMetrics(data) {
+        const containerMetrics = document.getElementById('container-metrics');
+        containerMetrics.innerHTML = '';
+        if (!data || !data.container) {
+            containerMetrics.innerHTML = '<p class="text-gray-400">No container metrics available (Docker not running or no AIVivid containers).</p>';
+            return;
+        }
+        const card = document.createElement('div');
+        card.className = 'monitor-card bg-dark p-6 rounded-lg border border-gray-800';
+        card.innerHTML = `
+            <div class="flex items-center mb-4">
+                <div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center mr-4 pulse-animation">
+                    <span class="text-white font-bold">C</span>
+                </div>
+                <h3 class="text-lg font-semibold">${data.container}</h3>
+            </div>
+            <p class="text-gray-300">CPU: ${data.cpu.toFixed(1)}%, Memory: ${data.memory.toFixed(1)}%</p>
+            <p class="text-gray-300">Network (RX/TX): ${(data.network.rx / (1024 * 1024)).toFixed(1)} MB / ${(data.network.tx / (1024 * 1024)).toFixed(1)} MB</p>
+            <p class="text-gray-300">Disk (Read/Write): ${(data.disk.read / (1024 * 1024)).toFixed(1)} MB / ${(data.disk.write / (1024 * 1024)).toFixed(1)} MB</p>
+        `;
+        containerMetrics.appendChild(card);
+        setTimeout(() => card.classList.add('visible'), 200);
+    }
+
+    // Update security metrics
+    function updateSecurityMetrics(data) {
+        console.log('Updating security metrics with:', data);
+        // Removed alert severity and health chart updates
+    }
+
+    // Update activity log
+    function updateActivityLog(event) {
+        const log = document.getElementById('activity-log');
+        const severity = event.severity || (event.description?.includes('exceeded') ? 'High' : event.description?.includes('anomaly') ? 'Medium' : 'Low');
+        const description = event.description || 
+            (event.alert_config ? `Alert configured for ${event.alert_config.metric} at ${event.alert_config.threshold}% via ${event.alert_config.notification_method} (${event.alert_config.frequency})` : 
+            `Metrics updated: CPU ${event.cpu?.percent?.toFixed(1)}%, Memory ${event.memory?.virtual_memory?.percent?.toFixed(1)}%, Network ${(event.network_io?.network ? (event.network_io.network.bytes_sent + event.network_io.network.bytes_recv) / (1024 * 1024) : 0).toFixed(1)} MB/s`);
+        const logItem = document.createElement('div');
+        logItem.className = 'activity-log-item relative p-4 rounded-lg';
+        logItem.innerHTML = `
+            <div class="absolute -left-12 mt-1.5 w-3 h-3 rounded-full bg-${severity.toLowerCase() === 'high' ? 'red' : severity.toLowerCase() === 'medium' ? 'yellow' : 'blue'}-500"></div>
+            <div class="mb-2 text-sm text-gray-400">${formatTime(event.timestamp)}</div>
+            <div class="text-white">${description}</div>
+        `;
+        log.prepend(logItem);
+        logItem.addEventListener('click', () => {
+            alert(`Details: ${description}`);
+        });
+        setTimeout(() => logItem.classList.add('visible'), 100);
+        while (log.children.length > 20) {
+            log.removeChild(log.lastChild);
+        }
+    }
+
+    // Initialize Charts
+    let metricsChart, cpuCoreChart, networkTrafficChart;
+
+    function initializeMetricsChart() {
+        if (metricsChart) metricsChart.destroy();
+        const ctx = document.getElementById('metricsChart').getContext('2d');
+        metricsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: timeSeries.labels,
+                datasets: [
+                    {
+                        label: 'CPU Usage (%)',
+                        data: timeSeries.cpu,
+                        borderColor: '#EF4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Memory Usage (%)',
+                        data: timeSeries.memory,
+                        borderColor: '#F59E0B',
+                        backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Disk I/O (IOPS)',
+                        data: timeSeries.disk,
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Network I/O (MB/s)',
+                        data: timeSeries.network,
+                        borderColor: '#10B981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Temperature (°C)',
+                        data: timeSeries.temperature,
+                        borderColor: '#8B5CF6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#D1D5DB' },
+                        grid: { color: '#4B5563' }
+                    },
+                    x: {
+                        ticks: { color: '#D1D5DB' },
+                        grid: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { color: '#D1D5DB' }
+                    },
+                    tooltip: {
+                        backgroundColor: '#1E293B',
+                        titleColor: '#fff',
+                        bodyColor: '#D1D5DB'
+                    }
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuad'
+                }
+            }
+        });
+    }
+
+    function updateCpuCoreChart() {
+        if (cpuCoreChart) cpuCoreChart.destroy();
+        const ctx = document.getElementById('cpuCoreChart').getContext('2d');
+        cpuCoreChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: timeSeries.labels,
+                datasets: [
+                    {
+                        label: 'Core 1',
+                        data: timeSeries.cpuCores[0],
+                        backgroundColor: '#EF4444',
+                        borderColor: '#EF4444',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Core 2',
+                        data: timeSeries.cpuCores[1],
+                        backgroundColor: '#F59E0B',
+                        borderColor: '#F59E0B',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Core 3',
+                        data: timeSeries.cpuCores[2],
+                        backgroundColor: '#3B82F6',
+                        borderColor: '#3B82F6',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Core 4',
+                        data: timeSeries.cpuCores[3],
+                        backgroundColor: '#10B981',
+                        borderColor: '#10B981',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: { color: '#D1D5DB' },
+                        grid: { color: '#4B5563' }
+                    },
+                    x: {
+                        ticks: { color: '#D1D5DB' },
+                        grid: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: '#1E293B',
+                        titleColor: '#fff',
+                        bodyColor: '#D1D5DB',
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.raw.toFixed(1)}%`;
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuad'
+                }
+            }
+        });
+    }
+
+    function updateNetworkTrafficChart() {
+        if (networkTrafficChart) networkTrafficChart.destroy();
+        const ctx = document.getElementById('networkTrafficChart').getContext('2d');
+        networkTrafficChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: timeSeries.labels,
+                datasets: [
+                    {
+                        label: 'Sent (MB/s)',
+                        data: timeSeries.networkSent,
+                        borderColor: '#10B981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Received (MB/s)',
+                        data: timeSeries.networkReceived,
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#D1D5DB' },
+                        grid: { color: '#4B5563' }
+                    },
+                    x: {
+                        ticks: { color: '#D1D5DB' },
+                        grid: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: '#1E293B',
+                        titleColor: '#fff',
+                        bodyColor: '#D1D5DB',
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.raw.toFixed(1)} MB/s`;
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuad'
+                }
+            }
+        });
+    }
+
+    // Fetch initial metrics
+    async function fetchInitialMetrics() {
+        try {
+            const response = await fetch('/api/monitoring/metrics');
+            const data = await response.json();
+            if (response.ok) {
+                updateSystemMetrics(data.system);
+                updateActivityLog({ timestamp: data.timestamp, description: 'Initial system metrics loaded' });
+            } else {
+                throw new Error(data.error || 'Failed to fetch metrics');
+            }
+        } catch (err) {
+            console.error('Error fetching metrics:', err);
+            updateActivityLog({ timestamp: new Date().toISOString(), description: `Error: ${err.message}`, severity: 'High' });
+        }
+
+        try {
+            const response = await fetch('/api/monitoring/containers');
+            const data = await response.json();
+            if (response.ok) {
+                data.containers.forEach(container => updateContainerMetrics(container));
+                updateActivityLog({ timestamp: data.timestamp, description: `Loaded metrics for ${data.total} container(s)` });
+            } else {
+                throw new Error(data.error || 'Failed to fetch container metrics');
+            }
+        } catch (err) {
+            console.error('Error fetching container metrics:', err);
+            updateContainerMetrics(null);
+            updateActivityLog({ timestamp: new Date().toISOString(), description: `Error: ${err.message}`, severity: 'High' });
+        }
+    }
+
+    // Toggle monitoring with confirmation
+    function toggleMonitoring() {
+        const button = document.getElementById('toggle-monitoring');
+        const modal = document.getElementById('confirm-monitoring-modal');
+        const confirmMessage = document.getElementById('confirm-message');
+        const confirmButton = document.getElementById('confirm-monitoring-btn');
+
+        confirmMessage.innerText = button.innerText.includes('Start') 
+            ? 'Are you sure you want to start monitoring? This will begin collecting system metrics.'
+            : 'Are you sure you want to stop monitoring? This will pause metric collection.';
+        
+        modal.classList.remove('hidden');
+        setTimeout(() => modal.classList.add('active'), 10);
+
+        confirmButton.onclick = () => {
+            if (button.innerText.includes('Start')) {
+                socket.emit('start_monitoring');
+            } else {
+                socket.emit('stop_monitoring');
+            }
+            closeConfirmModal();
+        };
+    }
+
+    function cancelMonitoringAction() {
+        closeConfirmModal();
+    }
+
+    function closeConfirmModal() {
+        const modal = document.getElementById('confirm-monitoring-modal');
+        modal.classList.remove('active');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+
+    // Configure alerts
+    function configureAlerts() {
+        const modal = document.getElementById('alert-config-modal');
+        modal.classList.remove('hidden');
+        setTimeout(() => modal.classList.add('active'), 10);
+    }
+
+    function closeAlertConfigModal() {
+        const modal = document.getElementById('alert-config-modal');
+        modal.classList.remove('active');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            document.getElementById('metric').value = 'cpu-usage';
+            document.getElementById('threshold').value = '';
+            document.getElementById('notification-method').value = 'email';
+            document.getElementById('alert-frequency').value = 'immediate';
+        }, 300);
+    }
+
+    async function saveAlertConfig() {
+        const metric = document.getElementById('metric').value;
+        const threshold = parseFloat(document.getElementById('threshold').value);
+        const notificationMethod = document.getElementById('notification-method').value;
+        const frequency = document.getElementById('alert-frequency').value;
+
+        if (!metric || isNaN(threshold) || threshold < 0 || threshold > 100) {
+            alert('Please select a valid metric and enter a threshold between 0 and 100');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/monitoring/alerts/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    metric,
+                    threshold,
+                    notification_method: notificationMethod,
+                    frequency
+                })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                updateActivityLog({ timestamp: data.config.created_at, description: `Alert configured for ${metric} at ${threshold}% via ${notificationMethod} (${frequency})`, severity: 'Low' });
+                alert('Alert configuration saved successfully');
+                closeAlertConfigModal();
+            } else {
+                throw new Error(data.error || 'Failed to save alert configuration');
+            }
+        } catch (err) {
+            console.error('Error saving alert config:', err);
+            updateActivityLog({ timestamp: new Date().toISOString(), description: `Error: ${err.message}`, severity: 'High' });
+            alert(`Error: ${err.message}`);
+        }
+    }
+
+    // Export report
+    async function exportReport() {
+        try {
+            const [metricsResponse, containersResponse] = await Promise.all([
+                fetch('/api/monitoring/metrics'),
+                fetch('/api/monitoring/containers')
+            ]);
+            const [metricsData, containersData] = await Promise.all([
+                metricsResponse.json(),
+                containersResponse.json()
+            ]);
+
+            const reportData = {
+                system: metricsResponse.ok ? metricsData : { error: metricsData.error },
+                containers: containersResponse.ok ? containersData : { error: containersData.error },
+                timestamp: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `monitoring-report-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            updateActivityLog({ timestamp: new Date().toISOString(), description: 'Monitoring report exported' });
+            alert('Report exported successfully');
+        } catch (err) {
+            console.error('Error exporting report:', err);
+            updateActivityLog({ timestamp: new Date().toISOString(), description: `Error exporting report: ${err.message}`, severity: 'High' });
+            alert(`Error exporting report: ${err.message}`);
+        }
+    }
+
+    // Socket.IO event handlers
+    socket.on('connect', () => {
+        console.log('Socket.IO connected');
+        updateActivityLog({ timestamp: new Date().toISOString(), description: 'Connected to monitoring service' });
+        socket.emit('start_monitoring');  // Auto-start monitoring
+    });
+
+    socket.on('connect_error', (error) => {
+        console.error('Socket.IO connection error:', error);
+        updateActivityLog({ timestamp: new Date().toISOString(), description: `Socket.IO error: ${error.message}`, severity: 'High' });
+    });
+
+    socket.on('monitoring_started', (data) => {
+        console.log('Monitoring started:', data);
+        updateActivityLog({ timestamp: new Date().toISOString(), description: 'Monitoring started' });
+        document.getElementById('toggle-monitoring').innerText = 'Stop Monitoring';
+        document.getElementById('toggle-monitoring').classList.remove('bg-purple-600', 'hover:bg-purple-700');
+        document.getElementById('toggle-monitoring').classList.add('bg-red-600', 'hover:bg-red-700');
+        document.getElementById('toggle-monitoring').innerHTML = `
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.36 6.64a9 9 0 11-12.73 0M12 2a9 9 0 00-9 9 9 9 0 009 9 9 9 0 009-9" />
+            </svg>
+            Stop Monitoring
+        `;
+        document.getElementById('toggle-monitoring').disabled = false;
+    });
+
+    socket.on('monitoring_stopped', (data) => {
+        console.log('Monitoring stopped:', data);
+        updateActivityLog({ timestamp: new Date().toISOString(), description: 'Monitoring stopped' });
+        document.getElementById('toggle-monitoring').innerText = 'Start Monitoring';
+        document.getElementById('toggle-monitoring').classList.remove('bg-red-600', 'hover:bg-red-700');
+        document.getElementById('toggle-monitoring').classList.add('bg-purple-600', 'hover:bg-purple-700');
+        document.getElementById('toggle-monitoring').innerHTML = `
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Start Monitoring
+        `;
+        document.getElementById('toggle-monitoring').disabled = false;
+    });
+
+    socket.on('monitoring_error', (data) => {
+        console.error('Monitoring error:', data);
+        updateActivityLog({ timestamp: new Date().toISOString(), description: `Monitoring error: ${data.error}`, severity: 'High' });
+        alert(`Monitoring error: ${data.error}`);
+        document.getElementById('toggle-monitoring').disabled = true;
+    });
+
+    socket.on('system_metrics', (data) => {
+        console.log('Received system_metrics:', data);
+        updateSystemMetrics(data);
+        updateActivityLog(data);
+    });
+
+    socket.on('security_metrics', (data) => {
+        console.log('Received security_metrics:', data);
+        if (data.alert_config) {
+            updateActivityLog(data);
+        }
+    });
+
+    socket.on('container_metrics', (data) => {
+        console.log('Received container_metrics:', data);
+        updateContainerMetrics(data);
+    });
+
+    socket.on('monitoring_heartbeat', (data) => {
+        console.log('Received monitoring_heartbeat:', data);
+    });
+
+    socket.on('new_alert', (data) => {
+        console.log('Received new_alert:', data);
+        updateActivityLog({ timestamp: data.created_at, description: `Alert: ${data.message}`, severity: data.severity });
+    });
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchInitialMetrics();
+        initializeMetricsChart();
+        updateCpuCoreChart();
+        updateNetworkTrafficChart();
+        animateCards();
+        document.getElementById('toggle-monitoring').addEventListener('click', toggleMonitoring);
+        document.getElementById('configure-alerts').addEventListener('click', configureAlerts);
+        document.getElementById('save-alert-btn').addEventListener('click', saveAlertConfig);
+        document.getElementById('cancel-alert-btn').addEventListener('click', closeAlertConfigModal);
+        document.getElementById('export-report').addEventListener('click', exportReport);
+        document.getElementById('cancel-monitoring-btn').addEventListener('click', cancelMonitoringAction);
+    });
+</script>
+</body>
+</html>

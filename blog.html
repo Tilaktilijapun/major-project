@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AIVivid - Blog</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#1E40AF',
+            dark: '#0F172A',
+            accent: '#a3c614',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .nav-item {
+      transition: all 0.3s ease;
+    }
+    .nav-item:hover {
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+    .nav-item.active {
+      background-color: rgba(59, 130, 246, 0.1);
+      border-left: 3px solid #3B82F6;
+      color: white !important;
+    }
+    .blog-card {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.5s ease;
+    }
+    .blog-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .blog-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+    }
+    .blog-image {
+      transition: transform 0.3s ease;
+    }
+    .blog-card:hover .blog-image {
+      transform: scale(1.05);
+    }
+    .blog-content {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .search-container {
+      position: relative;
+      transition: width 0.3s ease;
+    }
+    .search-container.active {
+      width: 100%;
+      max-width: 400px;
+    }
+    .search-container input {
+      width: 100%;
+      transition: all 0.3s ease;
+    }
+    .category-button {
+      transition: all 0.3s ease;
+    }
+    .category-button.active {
+      background-color: #3B82F6;
+      color: white;
+      transform: scale(1.05);
+    }
+    .load-more-button {
+      position: relative;
+      transition: all 0.3s ease;
+    }
+    .load-more-button.loading::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      border: 2px solid #fff;
+      border-top: 2px solid transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: translateY(-50%) rotate(0deg); }
+      100% { transform: translateY(-50%) rotate(360deg); }
+    }
+    .action-button {
+      transition: all 0.3s ease;
+    }
+    .action-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+    }
+    .gradient-text {
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      background-image: linear-gradient(90deg, #3B82F6, #a3c614);
+    }
+    .curved-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+    html {
+      scroll-behavior: smooth;
+    }
+  </style>
+</head>
+<body class="bg-dark text-white font-sans">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-64 bg-dark border-r border-gray-800">
+      <div class="p-6">
+        <div class="flex items-center">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="AIVivid Logo" class="h-8 w-auto">
+          <span class="ml-2 text-xl font-bold text-accent">AIVivid</span>
+        </div>
+      </div>
+      <nav class="mt-6 flex flex-col h-[calc(100%-80px)]">
+        <div class="px-4 space-y-2 flex-grow">
+          <a href="{{ url_for('user_dashboard.user_dashboard') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+            Dashboard
+          </a>
+          <a href="{{ url_for('security_scan.security_scan_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            </svg>
+            Security Scan
+          </a>
+          <a href="{{ url_for('alerts.user_security_alerts') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.072 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+            Security Alerts
+          </a>
+          <a href="{{ url_for('security_recommendations.recommendations_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2l4 -4M12 22C7.03 20.94 4 16.5 4 12V6l8-4l8 4v6c0 4.5-3 8.94-8 10z"/>
+            </svg>
+            Security Recommendations
+          </a>
+          <a href="{{ url_for('ml_features.ml_features_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9h6v6H9V9zM4 4v4m0 8v4m4 4h4m8-4v-4m0-8V4m-4-4h-4M4 12H2m20 0h-2M12 4V2m0 20v-2" />
+            </svg>
+            ML Features
+          </a>
+          <a href="{{ url_for('threat.threat_details_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            Threat Details
+          </a>
+          <a href="{{ url_for('model.model_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 16v-2m8-6h2M2 12H4m14.828-5.172l1.414 1.414M4.757 19.243l1.414-1.414M19.243 19.243l-1.414-1.414M4.757 4.757L6.172 6.17M9 12a3 3 0 006 0 3 3 0 00-6 0z"/>
+            </svg>
+            Model
+          </a>
+          <a href="{{ url_for('monitoring.monitoring_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 014-4h3m-7 6v2m0 0a2 2 0 01-2 2H6a2 2 0 01-2-2v-2a2 2 0 012-2h1m6-6V7a2 2 0 012-2h2a2 2 0 012 2v2"/>
+            </svg>
+            Monitoring
+          </a>
+          <a href="{{ url_for('blog.blog_page') }}" class="nav-item active flex items-center px-4 py-3 text-white bg-[#1E40AF] hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h7l2 2h5a2 2 0 012 2v12a2 2 0 01-2 2z"/>
+            </svg>
+            Blog
+          </a>
+        </div>
+        <div class="px-4 pb-4">
+          <a href="{{ url_for('index') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Return to Home
+          </a>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-auto relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Curved Background SVG -->
+        <svg class="curved-bg" viewBox="0 0 1440 320">
+          <path fill="rgba(59, 130, 246, 0.1)" d="M0,160L48,138.7C96,117,192,75,288,69.3C384,64,480,96,576,122.7C672,149,768,171,864,160C960,149,1056,107,1152,85.3C1248,64,1344,64,1392,64L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+        </svg>
+
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+          <div class="flex items-center">
+            <a href="{{ url_for('user_dashboard.user_dashboard') }}" class="text-gray-400 hover:text-white mr-4">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </a>
+            <h1 class="text-3xl font-bold gradient-text">AIVivid Blog</h1>
+          </div>
+          {% if current_user.is_authenticated %}
+          <a href="{{ url_for('blog.create_post') }}" class="action-button bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Create Post
+          </a>
+          {% endif %}
+        </div>
+
+        <!-- Search Bar and Category Filter -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+          <div class="search-container w-full md:w-64 lg:w-96">
+            <input id="search-input" type="text" placeholder="Search blogs..." class="bg-gray-800 text-white px-4 py-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary">
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button class="category-button bg-gray-700 px-4 py-2 rounded-md text-white active" data-category="all">All</button>
+            <button class="category-button bg-gray-700 px-4 py-2 rounded-md text-white" data-category="cybersecurity">Cybersecurity</button>
+            <button class="category-button bg-gray-700 px-4 py-2 rounded-md text-white" data-category="ai">AI</button>
+            <button class="category-button bg-gray-700 px-4 py-2 rounded-md text-white" data-category="monitoring">Monitoring</button>
+          </div>
+        </div>
+
+        <!-- Blog Posts -->
+        <div id="blog-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {% for post in posts %}
+          <div class="blog-card bg-gray-800 rounded-lg shadow p-4" data-category="{{ post.category|default('all')|lower }}">
+            <a href="{{ url_for('blog.view_post', post_id=post.id|string) }}">
+              <img src="{{ post.image_url|default('https://images.unsplash.com/photo-1620712943542-24033b3b3c7f') }}" alt="{{ post.title }}" class="blog-image rounded-lg mb-4 w-full h-48 object-cover">
+              <h2 class="text-xl font-semibold text-accent line-clamp-2">{{ post.title }}</h2>
+              <p class="blog-content text-gray-400 text-sm mt-2">{{ post.content|truncate(150) }}</p>
+              <div class="mt-4 flex justify-between items-center text-sm text-gray-500">
+                <span>✍️ {{ post.author.username if post.author else 'Unknown' }}</span>
+                <span>{{ post.created_at.strftime('%Y-%m-%d') }}</span>
+              </div>
+              <a href="{{ url_for('blog.view_post', post_id=post.id|string) }}" class="mt-2 inline-block text-primary hover:underline text-sm">Read More</a>
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Load More Blogs Button -->
+        <div class="text-center mt-8">
+          <button id="load-more" class="load-more-button bg-primary hover:bg-blue-600 px-6 py-2 rounded-md text-white transition hover:scale-105 transform hidden">Load More Blogs</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- JavaScript for Interactivity -->
+  <script>
+    // Blog Card Animation on Load
+    function animateBlogCards() {
+      const blogCards = document.querySelectorAll('.blog-card');
+      blogCards.forEach((card, index) => {
+        setTimeout(() => {
+          card.classList.add('visible');
+        }, index * 200);
+      });
+    }
+
+    // Search Bar Animation
+    const searchContainer = document.querySelector('.search-container');
+    const searchInput = document.getElementById('search-input');
+    searchInput.addEventListener('focus', () => {
+      searchContainer.classList.add('active');
+    });
+    searchInput.addEventListener('blur', () => {
+      if (!searchInput.value) {
+        searchContainer.classList.remove('active');
+      }
+    });
+
+    // Fetch Blogs from Backend
+    let currentPage = 1;
+    let currentCategory = 'all';
+    let currentSearch = '';
+
+    async function fetchBlogs(page = 1, category = 'all', search = '') {
+      try {
+        const params = new URLSearchParams({
+          page,
+          category: category === 'all' ? '' : category,
+          search
+        });
+        const response = await fetch(`/user/blog/api/posts?${params}`, {
+
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status}: ${await response.text()}`);
+        }
+        const data = await response.json();
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        return data;
+      } catch (err) {
+        console.error('Error fetching blogs:', err);
+        alert(`Failed to load blogs: ${err.message}`);
+        return { posts: [], total_pages: 0 };
+      }
+    }
+
+    // Render Blogs
+    function renderBlogs(posts) {
+      const blogContainer = document.getElementById('blog-container');
+      if (currentPage === 1) {
+        blogContainer.innerHTML = '';
+      }
+      posts.forEach(post => {
+        const blogCard = document.createElement('div');
+        blogCard.className = 'blog-card bg-gray-800 rounded-lg shadow p-4';
+        blogCard.setAttribute('data-category', post.category?.toLowerCase() || 'all');
+        blogCard.innerHTML = `
+          <a href="/user/blog/${encodeURIComponent(post.id)}">
+
+            <img src="${post.image_url || 'https://images.unsplash.com/photo-1620712943542-24033b3b3c7f'}" alt="${post.title}" class="blog-image rounded-lg mb-4 w-full h-48 object-cover">
+            <h2 class="text-xl font-semibold text-accent line-clamp-2">${post.title}</h2>
+            <p class="blog-content text-gray-400 text-sm mt-2">${post.content.substring(0, 150)}${post.content.length > 150 ? '...' : ''}</p>
+            <div class="mt-4 flex justify-between items-center text-sm text-gray-500">
+              <span>✍️ ${post.author?.username || 'Unknown'}</span>
+              <span>${new Date(post.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+            </div>
+            <a href="/user/blog/${encodeURIComponent(post.id)}" class="mt-2 inline-block text-primary hover:underline text-sm">Read More</a>
+
+          </a>
+        `;
+        blogContainer.appendChild(blogCard);
+      });
+      animateBlogCards();
+      updateLoadMoreButton(posts.length);
+    }
+
+    // Update Load More Button Visibility
+    function updateLoadMoreButton(postCount) {
+      const loadMoreButton = document.getElementById('load-more');
+      if (currentPage < window.totalPages && postCount > 0) {
+        loadMoreButton.classList.remove('hidden');
+      } else {
+        loadMoreButton.classList.add('hidden');
+      }
+    }
+
+    // Load Blogs
+    async function loadBlogs(reset = false) {
+      if (reset) {
+        currentPage = 1;
+      }
+      const loadMoreButton = document.getElementById('load-more');
+      loadMoreButton.classList.add('loading');
+      const data = await fetchBlogs(currentPage, currentCategory, currentSearch);
+      window.totalPages = data.total_pages;
+      renderBlogs(data.posts);
+      loadMoreButton.classList.remove('loading');
+    }
+
+    // Search Functionality
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        currentSearch = searchInput.value.trim();
+        loadBlogs(true);
+      }, 500);
+    });
+
+    // Category Filter
+    const categoryButtons = document.querySelectorAll('.category-button');
+    categoryButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        categoryButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        currentCategory = button.getAttribute('data-category');
+        loadBlogs(true);
+      });
+    });
+
+    // Load More Blogs
+    const loadMoreButton = document.getElementById('load-more');
+    loadMoreButton.addEventListener('click', () => {
+      currentPage++;
+      loadBlogs();
+    });
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      {% if posts %}
+      animateBlogCards();
+      {% else %}
+      loadBlogs(true);
+      {% endif %}
+    });
+  </script>
+</body>
+</html>

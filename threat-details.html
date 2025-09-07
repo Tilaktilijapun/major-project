@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIVivid - Threat Details</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#1E40AF',
+            dark: '#0F172A',
+            accent: '#a3c614',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .nav-item { transition: all 0.3s ease; }
+    .nav-item:hover { background-color: rgba(59, 130, 246, 0.1); }
+    .nav-item.active { background-color: rgba(59, 130, 246, 0.1); border-left: 3px solid #3B82F6; color: white !important; }
+    .threat-row:hover { background-color: #1F2A44; }
+    .action-button { transition: all 0.3s ease; }
+    .action-button:hover { transform: scale(1.05); }
+    .action-button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .chart-container { position: relative; width: 100%; max-width: 450px; height: 350px; margin: 0 auto; padding: 1.5rem; background: linear-gradient(145deg, #1e293b, #0f172a); border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.4); border: 1px solid rgba(59,130,246,0.2); }
+    .chart-legend { display: flex; justify-content: center; gap: 2rem; margin-top: 2rem; font-weight: 600; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .legend-item { display: flex; align-items: center; font-size: 1.1rem; color: #f3f4f6; transition: transform 0.2s ease; }
+    .legend-item:hover { transform: translateY(-2px); }
+    .legend-color { width: 24px; height: 24px; border-radius: 6px; margin-right: 0.75rem; box-shadow: 0 3px 6px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); }
+  </style>
+</head>
+<body class="bg-dark text-white font-sans">
+<div class="flex h-screen">
+  <!-- Sidebar -->
+  <div class="w-64 bg-dark border-r border-gray-800">
+    <div class="p-6">
+      <div class="flex items-center">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="AIVivid Logo" class="h-8 w-auto" />
+        <span class="ml-2 text-xl font-bold text-accent">AIVivid</span>
+      </div>
+    </div>
+    <nav class="mt-6 flex flex-col h-[calc(100%-80px)]">
+      <div class="px-4 space-y-2 flex-grow">
+        <a href="{{ url_for('user_dashboard.user_dashboard') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+          </svg>
+          Dashboard
+        </a>
+        <a href="{{ url_for('security_scan.security_scan_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+          </svg>
+          Security Scan
+        </a>
+        <a href="{{ url_for('alerts.user_security_alerts') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.072 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+          </svg>
+          Security Alerts
+        </a>
+        <a href="{{ url_for('security_recommendations.recommendations_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2l4 -4M12 22C7.03 20.94 4 16.5 4 12V6l8-4l8 4v6c0 4.5-3 8.94-8 10z"/>
+          </svg>
+          Security Recommendations
+        </a>
+        <a href="{{ url_for('ml_features.ml_features_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9h6v6H9V9zM4 4v4m0 8v4m4 4h4m8-4v-4m0-8V4m-4-4h-4M4 12H2m20 0h-2M12 4V2m0 20v-2" />
+          </svg>
+          ML Features
+        </a>
+        <a href="{{ url_for('threat.threat_details_page') }}" class="nav-item active flex items-center px-4 py-3 text-white bg-[#1E40AF] hover:text-white rounded-lg">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+          Threat Details
+        </a>
+        <a href="{{ url_for('model.model_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 16v-2m8-6h2M2 12H4m14.828-5.172l1.414 1.414M4.757 19.243l1.414-1.414M19.243 19.243l-1.414-1.414M4.757 4.757L6.172 6.17M9 12a3 3 0 006 0 3 3 0 00-6 0z"/>
+          </svg>
+          Model
+        </a>
+        <a href="{{ url_for('monitoring.monitoring_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 014-4h3m-7 6v2m0 0a2 2 0 01-2 2H6a2 2 0 01-2-2v-2a2 2 0 012-2h1m6-6V7a2 2 0 012-2h2a2 2 0 012 2v2"/>
+          </svg>
+          Monitoring
+        </a>
+        <a href="{{ url_for('blog.blog_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h7l2 2h5a2 2 0 012 2v12a2 2 0 01-2 2z"/>
+          </svg>
+          Blog
+        </a>
+      </div>
+      <div class="px-4 pb-4">
+        <a href="{{ url_for('index') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          Return to Home
+        </a>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-1 overflow-y-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center">
+          <a href="{{ url_for('user_dashboard.user_dashboard') }}" class="text-gray-400 hover:text-white mr-4">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </a>
+          <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">Threat Details</h1>
+        </div>
+        <div class="flex space-x-4">
+          <select id="threatTypeFilter" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-sm">
+            <option value="raw">Raw Detections</option>
+            <option value="summary">Summary</option>
+          </select>
+          <select id="severityFilter" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-sm">
+            <option value="">All Severities</option>
+            <option value="Critical">Critical</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+          <button onclick="exportThreats()" class="action-button bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Export Threats
+          </button>
+        </div>
+      </div>
+
+      <!-- Severity Chart -->
+      <div class="bg-gray-800 rounded-lg p-6 shadow mb-8">
+        <h2 class="text-xl font-semibold mb-4 text-white">Threat Severity Distribution</h2>
+        <div class="chart-container">
+          <canvas id="severity-chart"></canvas>
+          <div class="chart-legend">
+            <div class="legend-item"><span class="legend-color" style="background-color: rgba(153,27,27,0.9);"></span>Critical</div>
+            <div class="legend-item"><span class="legend-color" style="background-color: rgba(239,68,68,0.9);"></span>High</div>
+            <div class="legend-item"><span class="legend-color" style="background-color: rgba(251,191,36,0.9);"></span>Medium</div>
+            <div class="legend-item"><span class="legend-color" style="background-color: rgba(59,130,246,0.9);"></span>Low</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Threat Table -->
+      <div class="bg-gray-800 rounded-lg p-6 shadow">
+        <h2 class="text-xl font-semibold mb-4">Detected Threats</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead>
+              <tr class="text-left text-gray-400">
+                <th class="px-4 py-2">Detected At</th>
+                <th class="px-4 py-2">Name</th>
+                <th class="px-4 py-2">Device ID</th>
+                <th class="px-4 py-2">Description</th>
+                <th class="px-4 py-2">Severity</th>
+                <th class="px-4 py-2">IP Address</th>
+                <th class="px-4 py-2">Port</th>
+                <th class="px-4 py-2">Protocol</th>
+                <th class="px-4 py-2">Status</th>
+                <th class="px-4 py-2">Action</th>
+              </tr>
+            </thead>
+            <tbody id="threatsTableBody" class="text-white divide-y divide-gray-700">
+              <!-- Rows inserted dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // -------------------------
+  // Helpers
+  // -------------------------
+  const formatTime = (isoString) => isoString ? new Date(isoString).toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' }) : 'N/A';
+
+  const updateSeverityChart = async () => {
+    const severity = document.getElementById('severityFilter').value;
+    let counts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
+    try {
+      const url = `/user/threat_details/threats/severity_distribution${severity ? `?severity=${severity}` : ''}`;
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'include' });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(`Failed fetching severity distribution (HTTP ${res.status}): ${errorData.error || 'Unknown error'}`);
+      }
+      const data = await res.json();
+      counts = data.severity_counts || counts;
+    } catch (e) {
+      console.error('Error fetching severity distribution:', e);
+      alert(`Error loading chart: ${e.message}`);
+    }
+
+    const dataValues = Object.values(counts);
+    const isEmpty = dataValues.every(v => v === 0);
+    const ctx = document.getElementById('severity-chart').getContext('2d');
+    if (window.severityChart) window.severityChart.destroy();
+
+    window.severityChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Critical', 'High', 'Medium', 'Low'],
+        datasets: [{
+          data: isEmpty ? [1, 1, 1, 1] : [counts.Critical, counts.High, counts.Medium, counts.Low],
+          backgroundColor: isEmpty
+            ? ['rgba(153,27,27,0.3)', 'rgba(239,68,68,0.3)', 'rgba(251,191,36,0.3)', 'rgba(59,130,246,0.3)']
+            : ['rgba(153,27,27,0.9)', 'rgba(239,68,68,0.9)', 'rgba(251,191,36,0.9)', 'rgba(59,130,246,0.9)'],
+          borderColor: ['rgba(153,27,27,1)', 'rgba(239,68,68,1)', 'rgba(251,191,36,1)', 'rgba(59,130,246,1)'],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: !isEmpty }
+        }
+      }
+    });
+  };
+
+  const loadThreats = async () => {
+    const tbody = document.getElementById('threatsTableBody');
+    const severity = document.getElementById('severityFilter').value;
+    const type = document.getElementById('threatTypeFilter').value;
+    const endpoint = type === 'summary' ? '/user/threat_details/threats/summary' : '/user/threat_details/threats';
+    const url = `${endpoint}${severity ? `?severity=${severity}` : ''}`;
+
+    try {
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'include' });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(`Failed to load threats (HTTP ${res.status}): ${errorData.error || 'Unknown error'} (Request ID: ${errorData.request_id || 'N/A'})`);
+      }
+      const data = await res.json();
+      const threats = data.threats || [];
+      tbody.innerHTML = threats.length ? threats.map(t => `
+        <tr class="threat-row">
+          <td class="px-4 py-2">${formatTime(t.detected_at)}</td>
+          <td class="px-4 py-2">${t.name || 'Unknown'}</td>
+          <td class="px-4 py-2">${t.device_id || 'N/A'}</td>
+          <td class="px-4 py-2">${t.description || 'N/A'}</td>
+          <td class="px-4 py-2 ${t.severity === 'Critical' ? 'text-red-700' : t.severity === 'High' ? 'text-red-500' : t.severity === 'Medium' ? 'text-yellow-500' : 'text-blue-500'}">${t.severity || 'Unknown'}</td>
+          <td class="px-4 py-2">${t.ip_address || 'N/A'}</td>
+          <td class="px-4 py-2">${t.port || 'N/A'}</td>
+          <td class="px-4 py-2">${t.protocol || 'N/A'}</td>
+          <td class="px-4 py-2">${t.status || 'Detected'}</td>
+          <td class="px-4 py-2">
+            ${type === 'raw' && t.status !== 'resolved' ? `<button onclick="solveThreat('${t.id}')" class="action-button bg-yellow-600 hover:bg-yellow-700 px-2 py-1 rounded-md text-xs">Solve</button>` : t.status === 'resolved' ? 'Solved' : 'N/A'}
+          </td>
+        </tr>
+      `).join('') : '<tr><td colspan="10" class="text-center text-gray-400 px-4 py-2">No threats found</td></tr>';
+      await updateSeverityChart();
+    } catch (e) {
+      console.error('Error loading threats:', e);
+      tbody.innerHTML = `<tr><td colspan="10" class="text-center text-red-500 px-4 py-2">Failed to load threats: ${e.message}</td></tr>`;
+      await updateSeverityChart();
+    }
+  };
+
+  const solveThreat = async (id) => {
+    try {
+      const res = await fetch(`/user/threat_details/threats/${id}/solve`, { method: 'POST', headers: { 'Accept': 'application/json' }, credentials: 'include' });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(`Failed to solve threat (HTTP ${res.status}): ${errorData.error || 'Unknown error'} (Request ID: ${errorData.request_id || 'N/A'})`);
+      }
+      const data = await res.json();
+      alert(`${data.message || 'Threat resolved'}\nActions Taken: ${data.actions_taken?.join(', ') || 'None'}`);
+      await loadThreats();
+    } catch (e) {
+      console.error('Error solving threat:', e);
+      alert(`Error solving threat: ${e.message}`);
+    }
+  };
+
+  const exportThreats = async () => {
+    try {
+      const severity = document.getElementById('severityFilter').value;
+      const url = `/user/threat_details/threats/export${severity ? `?severity=${severity}` : ''}`;
+      const res = await fetch(url, { headers: { 'Accept': 'text/csv' }, credentials: 'include' });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(`Failed to export threats (HTTP ${res.status}): ${errorData.error || 'Unknown error'} (Request ID: ${errorData.request_id || 'N/A'})`);
+      }
+      const text = await res.text();
+      const blob = new Blob([text], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `threats_report_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      alert('Threats exported successfully!');
+    } catch (e) {
+      console.error('Error exporting threats:', e);
+      alert(`Error exporting threats: ${e.message}`);
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadThreats();
+    document.getElementById('severityFilter').addEventListener('change', loadThreats);
+    document.getElementById('threatTypeFilter').addEventListener('change', loadThreats);
+  });
+</script>
+</body>
+</html>

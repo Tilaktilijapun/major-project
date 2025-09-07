@@ -1,0 +1,782 @@
+<!-- security-scan.html (Fully Updated) -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIVivid - Security Scan</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#1E40AF',
+            dark: '#0F172A',
+            accent: '#a3c614',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .nav-item {
+      transition: all 0.3s ease;
+    }
+
+    .nav-item:hover {
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+
+    .nav-item.active {
+      background-color: rgba(59, 130, 246, 0.1);
+      border-left: 3px solid #3B82F6;
+      color: white !important;
+    }
+
+    .scan-button {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3B82F6, #1E40AF);
+      border: 4px solid #4B5563;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: white;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .scan-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+      );
+      transition: 0.5s;
+    }
+
+    .scan-button:hover::before {
+      left: 100%;
+    }
+
+    .scan-button.loading {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .scan-button.loading::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border: 2px solid #fff;
+      border-top: 2px solid transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: translate(-50%, -50%) rotate(0deg); }
+      100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: #1E293B;
+      padding: 24px;
+      border-radius: 8px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .error-modal {
+      background: #EF4444;
+    }
+
+    .progress-bar {
+      height: 20px;
+      background: #2D3748;
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #a3c614;
+      transition: width 1s ease-in-out;
+    }
+
+    .pie-segment {
+      transition: all 0.3s ease;
+      transform-origin: 50% 50%;
+      filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+    }
+
+    .pie-segment:hover {
+      transform: scale(1.15) rotate(3deg);
+      cursor: pointer;
+      filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5)) brightness(1.3);
+      stroke: #3B82F6;
+      stroke-width: 2;
+    }
+
+    .pie-segment.active {
+      animation: pieGrow 0.6s ease-in-out forwards;
+      animation-delay: calc(var(--index) * 0.1s);
+      filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.4));
+    }
+
+    .pie-segment.focused {
+      transform: scale(1.1);
+      filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.6)) brightness(1.2);
+    }
+
+    @keyframes pieGrow {
+      0% {
+        transform: scale(0) rotate(-10deg);
+        opacity: 0;
+      }
+      80% {
+        transform: scale(1.05) rotate(5deg);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+      }
+    }
+
+    .pie-chart-container {
+      position: relative;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
+      padding: 16px;
+      border-radius: 12px;
+      animation: pulseBackground 4s ease-in-out infinite;
+      max-width: 300px;
+      margin: 0 auto;
+    }
+
+    @keyframes pulseBackground {
+      0%, 100% { background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%); }
+      50% { background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%); }
+    }
+
+    @media (max-width: 640px) {
+      .pie-chart-container {
+        max-width: 200px;
+      }
+    }
+
+    #placeholder-circle {
+      animation: pulseNoData 2s ease-in-out infinite;
+    }
+
+    @keyframes pulseNoData {
+      0%, 100% { transform: scale(1); opacity: 0.3; }
+      50% { transform: scale(1.05); opacity: 0.5; }
+    }
+
+    .legend-item {
+      transition: all 0.3s ease;
+    }
+
+    .legend-item:hover {
+      transform: translateX(4px);
+      color: #fff;
+    }
+
+    .no-data-text {
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .tooltip {
+      position: absolute;
+      background: #1E293B;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      font-size: 1rem;
+      font-weight: 500;
+      pointer-events: none;
+      z-index: 10;
+      transform: translateY(-10px);
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      border: 1px solid #3B82F6;
+    }
+
+    .tooltip.active {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      animation: tooltipPop 0.3s ease-out;
+    }
+
+    @keyframes tooltipPop {
+      0% { transform: translateY(-10px) scale(0.8); opacity: 0; }
+      80% { transform: translateY(0) scale(1.05); opacity: 1; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    .counter {
+      transition: all 1s ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-dark text-white font-sans">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-64 bg-dark border-r border-gray-800">
+      <div class="p-6">
+        <div class="flex items-center">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="AIVivid Logo" class="h-8 w-auto">
+          <span class="ml-2 text-xl font-bold text-accent">AIVivid</span>
+        </div>
+      </div>
+      <nav class="mt-6 flex flex-col h-[calc(100%-80px)]">
+        <div class="px-4 space-y-2 flex-grow">
+          <a href="{{ url_for('user_dashboard.user_dashboard') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+            Dashboard
+          </a> 
+          <a href="{{ url_for('security_scan.security_scan_page') }}" class="nav-item active flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            </svg>
+            Security Scan
+          </a>
+          <a href="{{ url_for('alerts.user_security_alerts') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.072 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+            Security Alerts
+          </a>
+          <a href="{{ url_for('security_recommendations.recommendations_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2l4 -4M12 22C7.03 20.94 4 16.5 4 12V6l8-4l8 4v6c0 4.5-3 8.94-8 10z"/>
+            </svg>
+            Security Recommendations
+          </a>
+          <a href="{{ url_for('ml_features.ml_features_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9h6v6H9V9zM4 4v4m0 8v4m4 4h4m8-4v-4m0-8V4m-4-4h-4M4 12H2m20 0h-2M12 4V2m0 20v-2" />
+            </svg>
+            ML Features
+          </a>
+          <a href="{{ url_for('threat.threat_details_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            Threat Details
+          </a>
+          <a href="{{ url_for('model.model_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 16v-2m8-6h2M2 12H4m14.828-5.172l1.414 1.414M4.757 19.243l1.414-1.414M19.243 19.243l-1.414-1.414M4.757 4.757L6.172 6.17M9 12a3 3 0 006 0 3 3 0 00-6 0z"/>
+            </svg>
+            Model
+          </a>
+          <a href="{{ url_for('monitoring.monitoring_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 014-4h3m-7 6v2m0 0a2 2 0 01-2 2H6a2 2 0 01-2-2v-2a2 2 0 012-2h1m6-6V7a2 2 0 012-2h2a2 2 0 012 2v2"/>
+            </svg>
+            Monitoring
+          </a>
+          <a href="{{ url_for('blog.blog_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h7l2 2h5a2 2 0 012 2v12a2 2 0 01-2 2z"/>
+            </svg>
+            Blog
+          </a>
+        </div>
+        <div class="px-4 pb-4">
+          <a href="{{ url_for('index') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Return to Home
+          </a>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-auto">
+      <!-- Header -->
+      <header class="bg-dark border-b border-gray-800 p-4">
+        <div class="flex justify-between items-center">
+          <h1 class="text-2xl font-semibold">Security Scan</h1>
+          <button id="run-scan" class="scan-button">
+            <span>Scan Now</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Scan Stats -->
+      <main class="p-6 space-y-6">
+        <!-- Scan Progress Bar -->
+        <div class="bg-gray-800 p-4 rounded-lg shadow">
+          <h3 class="text-lg font-semibold mb-2">Scan Progress</h3>
+          <div class="progress-bar">
+            <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+          </div>
+          <p id="progress-text" class="text-sm text-gray-400 mt-2">Waiting for scan...</p>
+        </div>
+
+        <!-- Stats Cards with Animated Counters -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-gray-800 p-4 rounded-lg shadow hover:scale-105 transition-transform">
+            <p class="text-sm text-gray-400">Scan Type</p>
+            <h2 class="text-xl font-bold text-accent counter" id="scan-type" data-target="--"></h2>
+          </div>
+          <div class="bg-gray-800 p-4 rounded-lg shadow hover:scale-105 transition-transform">
+            <p class="text-sm text-gray-400">Items Scanned</p>
+            <h2 class="text-xl font-bold counter" id="scanned-items" data-target="0"></h2>
+          </div>
+          <div class="bg-gray-800 p-4 rounded-lg shadow hover:scale-105 transition-transform">
+            <p class="text-sm text-gray-400">Issues Found</p>
+            <h2 class="text-xl font-bold text-red-500 counter" id="issues-found" data-target="0"></h2>
+          </div>
+          <div class="bg-gray-800 p-4 rounded-lg shadow hover:scale-105 transition-transform">
+            <p class="text-sm text-gray-400">Duration (s)</p>
+            <h2 class="text-xl font-bold text-green-400 counter" id="scan-duration" data-target="0"></h2>
+          </div>
+        </div>
+
+        <!-- Interactive SVG Pie Chart and Bar Chart -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- SVG Pie Chart -->
+          <div class="bg-gray-800 p-4 rounded-lg shadow pie-chart-container">
+            <h3 class="text-lg font-semibold mb-2">Issue Severity Distribution</h3>
+            <div class="flex flex-col items-center">
+              <div class="relative w-full max-w-[250px] aspect-square">
+                <svg id="pie-chart" viewBox="0 0 100 100" class="w-full h-full" role="img" aria-label="Issue Severity Distribution Pie Chart">
+                  <title>Issue Severity Distribution</title>
+                  <!-- Placeholder for no data -->
+                  <circle id="placeholder-circle" cx="50" cy="50" r="40" fill="url(#noDataGradient)" stroke="#4B5563" stroke-width="20" opacity="0.3" />
+                  <!-- Pie segments -->
+                  <path id="critical-segment" class="pie-segment" fill="url(#criticalGradient)" stroke="#1E293B" stroke-width="1.5" d="" data-tooltip="Critical: 0"/>
+                  <path id="high-segment" class="pie-segment" fill="url(#highGradient)" stroke="#1E293B" stroke-width="1.5" d="" data-tooltip="High: 0"/>
+                  <path id="medium-segment" class="pie-segment" fill="url(#mediumGradient)" stroke="#1E293B" stroke-width="1.5" d="" data-tooltip="Medium: 0"/>
+                  <path id="low-segment" class="pie-segment" fill="url(#lowGradient)" stroke="#1E293B" stroke-width="1.5" d="" data-tooltip="Low: 0"/>
+                  <!-- Gradient Definitions -->
+                  <defs>
+                    <radialGradient id="criticalGradient" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" style="stop-color:#FF4D4D;stop-opacity:1" />
+                      <stop offset="100%" style="stop-color:#B31212;stop-opacity:1" />
+                    </radialGradient>
+                    <radialGradient id="highGradient" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+                      <stop offset="100%" style="stop-color:#B8860B;stop-opacity:1" />
+                    </radialGradient>
+                    <radialGradient id="mediumGradient" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" style="stop-color:#00FA9A;stop-opacity:1" />
+                      <stop offset="100%" style="stop-color:#008B45;stop-opacity:1" />
+                    </radialGradient>
+                    <radialGradient id="lowGradient" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" style="stop-color:#87CEEB;stop-opacity:1" />
+                      <stop offset="100%" style="stop-color:#4682B4;stop-opacity:1" />
+                    </radialGradient>
+                    <radialGradient id="noDataGradient" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" style="stop-color:#6B7280;stop-opacity:0.5" />
+                      <stop offset="100%" style="stop-color:#374151;stop-opacity:0.5" />
+                    </radialGradient>
+                  </defs>
+                </svg>
+                <div id="no-data-text" class="absolute inset-0 flex items-center justify-center text-gray-300 text-sm font-semibold no-data-text" style="display: none;">
+                  No Issues Detected
+                </div>
+                <div id="pie-tooltip" class="tooltip"></div>
+              </div>
+              <!-- Legend -->
+              <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
+                <div class="flex items-center legend-item" tabindex="0" role="button" aria-label="Critical severity: 0 issues">
+                  <span class="w-3 h-3 rounded-full mr-2" style="background: radial-gradient(circle, #FF4D4D, #B31212);"></span>
+                  <span id="critical-legend">Critical: 0</span>
+                </div>
+                <div class="flex items-center legend-item" tabindex="0" role="button" aria-label="High severity: 0 issues">
+                  <span class="w-3 h-3 rounded-full mr-2" style="background: radial-gradient(circle, #FFD700, #B8860B);"></span>
+                  <span id="high-legend">High: 0</span>
+                </div>
+                <div class="flex items-center legend-item" tabindex="0" role="button" aria-label="Medium severity: 0 issues">
+                  <span class="w-3 h-3 rounded-full mr-2" style="background: radial-gradient(circle, #00FA9A, #008B45);"></span>
+                  <span id="medium-legend">Medium: 0</span>
+                </div>
+                <div class="flex items-center legend-item" tabindex="0" role="button" aria-label="Low severity: 0 issues">
+                  <span class="w-3 h-3 rounded-full mr-2" style="background: radial-gradient(circle, #87CEEB, #4682B4);"></span>
+                  <span id="low-legend">Low: 0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bar Chart -->
+          <div class="bg-gray-800 p-4 rounded-lg shadow">
+            <h3 class="text-lg font-semibold mb-2">Scan Statistics</h3>
+            <canvas id="bar-chart" height="200"></canvas>
+          </div>
+        </div>
+
+        <!-- Detected Threats -->
+        <div class="bg-gray-800 p-4 rounded-lg shadow">
+          <h3 class="text-lg font-semibold mb-2">Detected Issues</h3>
+          <ul id="threat-log" class="space-y-2 text-sm text-gray-300">
+            <li>Waiting for scan...</li>
+          </ul>
+        </div>
+      </main>
+    </div>
+
+    <!-- Permission Modal -->
+    <div id="permission-modal" class="modal">
+      <div class="modal-content">
+        <h2 class="text-xl font-semibold mb-4">System Access Permission</h2>
+        <p class="text-gray-300 mb-6">AIVivid requires system access to perform a comprehensive security scan. This includes access to system files and network configurations.</p>
+        <div class="flex justify-center space-x-4">
+          <button id="allow-access" class="bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-md transition">Allow</button>
+          <button id="deny-access" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition">Deny</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="error-modal" class="modal">
+      <div class="modal-content error-modal">
+        <h2 class="text-xl font-semibold mb-4">Scan Error</h2>
+        <p id="error-message" class="text-gray-100 mb-6">An error occurred during the scan.</p>
+        <div class="flex justify-center space-x-4">
+          <button id="retry-scan" class="bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-md transition">Retry</button>
+          <button id="close-error" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // --- Audio Setup ---
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  function playScanStartSound() {
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+    osc.start(); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+    osc.stop(audioCtx.currentTime + 0.4);
+  }
+
+  function playProgressSound() {
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    const modOsc = audioCtx.createOscillator(), modGain = audioCtx.createGain();
+    modOsc.connect(modGain); modGain.connect(osc.frequency);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.type = 'square'; modOsc.type = 'sine';
+    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+    modOsc.frequency.setValueAtTime(50, audioCtx.currentTime);
+    modGain.gain.setValueAtTime(100, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+    osc.start(); modOsc.start();
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+    osc.stop(audioCtx.currentTime + 0.25); modOsc.stop(audioCtx.currentTime + 0.25);
+  }
+
+  function playCompletionSound() {
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    const modOsc = audioCtx.createOscillator(), modGain = audioCtx.createGain();
+    modOsc.connect(modGain); modGain.connect(osc.frequency);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.type = 'sawtooth'; modOsc.type = 'sine';
+    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+    osc.frequency.linearRampToValueAtTime(1500, audioCtx.currentTime + 0.6);
+    modOsc.frequency.setValueAtTime(20, audioCtx.currentTime);
+    modGain.gain.setValueAtTime(50, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+    osc.start(); modOsc.start();
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+    osc.stop(audioCtx.currentTime + 0.8); modOsc.stop(audioCtx.currentTime + 0.8);
+  }
+
+  function speak(text) {
+    if ('speechSynthesis' in window) {
+      const utter = new SpeechSynthesisUtterance(text);
+      speechSynthesis.speak(utter);
+    } else console.log("TTS not supported");
+  }
+
+  function animateCounter(el, start, end, duration) {
+    let startTS = null;
+    const step = (ts) => {
+      if (!startTS) startTS = ts;
+      const progress = Math.min((ts - startTS) / duration, 1);
+      const value = Math.floor(progress * (end - start) + start);
+      el.innerText = isNaN(value) ? end : value;
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  function generatePiePath(cx, cy, r, startAngle, endAngle) {
+    if (endAngle - startAngle <= 0) return '';
+    const start = { x: cx + r * Math.cos((startAngle * Math.PI) / 180), y: cy + r * Math.sin((startAngle * Math.PI) / 180) };
+    const end = { x: cx + r * Math.cos((endAngle * Math.PI) / 180), y: cy + r * Math.sin((endAngle * Math.PI) / 180) };
+    const largeArc = endAngle - startAngle <= 180 ? 0 : 1;
+    return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 1 ${end.x} ${end.y} Z`;
+  }
+
+  // --- Charts ---
+  const barChart = new Chart(document.getElementById('bar-chart'), {
+    type: 'bar',
+    data: {
+      labels: ['Items Scanned', 'Issues Found', 'Duration (s)'],
+      datasets: [{ label: 'Scan Metrics', data: [0, 0, 0], backgroundColor: ['#a3c614', '#EF4444', '#10B981'], borderColor: ['#a3c614', '#EF4444', '#10B981'], borderWidth: 1 }]
+    },
+    options: {
+      scales: {
+        y: { beginAtZero: true, ticks: { color: '#D1D5DB' }, grid: { color: '#4B5563' } },
+        x: { ticks: { color: '#D1D5DB' }, grid: { display: false } }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  let lastScanResult = null;
+
+  // --- Trigger Scan ---
+  async function triggerScan() {
+    const btn = document.getElementById('run-scan');
+    btn.classList.add('loading'); playScanStartSound();
+    const fill = document.getElementById('progress-fill'), text = document.getElementById('progress-text');
+    fill.style.width = '0%'; text.innerText = 'Scanning...';
+
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress = Math.min(progress + 5, 100);
+      fill.style.width = `${progress}%`;
+      if (progress % 20 === 0) playProgressSound();
+      if (progress >= 100) { clearInterval(interval); playCompletionSound(); }
+    }, 200);
+
+    try {
+      const res = await fetch('/user/security_scan/api/security-scan', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ input_type: 'device', features: [0.9,0.95,0.85,0.9,0.92,0.88,0.9,0.95,0.9,0.93], ip_address: '192.168.1.203', port: 443, protocol: 'HTTPS' })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        text.innerText = 'Scan Complete';
+        lastScanResult = data?.scan_result || null;
+
+        if (!lastScanResult) {
+          showErrorModal('Scan failed: Invalid scan result.');
+          btn.querySelector('span').innerText = 'Scan Now';
+          return;
+        }
+
+        updateUI(lastScanResult);
+
+        const mlDetected = lastScanResult?.ml_result?.threat_detected || false;
+        const jsonDetected = Array.isArray(lastScanResult?.json_detections) && lastScanResult.json_detections.length > 0;
+        btn.querySelector('span').innerText = (mlDetected || jsonDetected) ? 'Solve Now' : 'Scan Again';
+      } else {
+        text.innerText = 'Scan Failed';
+        showErrorModal(data.error || 'Unknown server error');
+        btn.querySelector('span').innerText = 'Scan Now';
+      }
+    } catch (err) {
+      text.innerText = 'Scan Error';
+      showErrorModal(`Error starting scan: ${err.message}`);
+      if (err.message.includes('not authenticated')) window.location.href = '/login';
+    } finally { btn.classList.remove('loading'); }
+  }
+
+  // --- Solve Threats ---
+  async function solveThreats() {
+    if (!lastScanResult) { showErrorModal('No scan result available.'); return; }
+
+    const btn = document.getElementById('run-scan');
+    btn.classList.add('loading'); const fill = document.getElementById('progress-fill'), text = document.getElementById('progress-text');
+    fill.style.width = '0%'; text.innerText = 'Solving Threats...';
+
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress = Math.min(progress + 5, 100);
+      fill.style.width = `${progress}%`;
+      if (progress % 20 === 0) playProgressSound();
+      if (progress >= 100) { clearInterval(interval); playCompletionSound(); }
+    }, 200);
+
+    try {
+      const res = await fetch('/user/security_scan/api/security-scan/solve', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ scan_result: lastScanResult })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        text.innerText = 'Threats Resolved';
+        updateThreatLogAfterSolve(data.mitigation_actions || []);
+        btn.querySelector('span').innerText = 'Scan Again';
+        speak("Threats have been resolved.");
+      } else {
+        text.innerText = 'Solve Failed';
+        showErrorModal(data.error || 'Unknown server error');
+        btn.querySelector('span').innerText = 'Scan Again';
+      }
+    } catch (err) {
+      text.innerText = 'Solve Error';
+      showErrorModal(`Error solving threats: ${err.message}`);
+      btn.querySelector('span').innerText = 'Scan Again';
+    } finally { btn.classList.remove('loading'); }
+  }
+
+  // --- Update UI ---
+  function updateUI(data) {
+    const result = data?.ml_result || {};
+    const jsonDetections = Array.isArray(data?.json_detections) ? data.json_detections : [];
+    const recommendations = Array.isArray(data?.recommendations) ? data.recommendations : [];
+
+    document.getElementById('scan-type').innerText = result?.type || '--';
+    animateCounter(document.getElementById('scanned-items'), 0, 1, 1000);
+    const detectedCount = (result?.threat_detected ? 1 : 0) + jsonDetections.length;
+    animateCounter(document.getElementById('issues-found'), 0, detectedCount, 1000);
+    animateCounter(document.getElementById('scan-duration'), 0, 3, 1000);
+
+    // Severity counts
+    const severityCounts = { critical: 0, high: 0, medium: 0, low: 0 };
+    if (result?.threat_detected && result?.severity) {
+      const sev = result.severity.toLowerCase();
+      severityCounts[sev] = (severityCounts[sev] || 0) + 1;
+    }
+    jsonDetections.forEach(det => {
+      const sev = det?.severity?.toLowerCase();
+      if (sev) severityCounts[sev] = (severityCounts[sev] || 0) + 1;
+    });
+
+    // Bar chart
+    barChart.data.datasets[0].data = [1, detectedCount, 3];
+    barChart.update();
+
+    // Threat log
+    const log = document.getElementById('threat-log');
+    log.innerHTML = '';
+
+    if (result?.threat_detected) {
+      const li = document.createElement('li');
+      li.innerText = `[${result.severity?.toUpperCase() || 'UNKNOWN'}] ${result.type || 'Threat'} - ${result.description || 'No description'}`;
+      li.classList.add('hover:bg-gray-700', 'p-2', 'rounded', 'transition');
+      log.appendChild(li);
+    }
+    jsonDetections.forEach(det => {
+      const li = document.createElement('li');
+      li.innerText = `[${det.severity?.toUpperCase() || 'UNKNOWN'}] ${det.activity || 'Activity'} - ${det.details || 'No details'}`;
+      li.classList.add('hover:bg-gray-700', 'p-2', 'rounded', 'transition');
+      log.appendChild(li);
+    });
+    recommendations.forEach(rec => {
+      const li = document.createElement('li');
+      li.innerText = `Recommendation: ${rec}`;
+      li.classList.add('hover:bg-gray-700', 'p-2', 'rounded', 'transition');
+      log.appendChild(li);
+    });
+
+    if (detectedCount > 0) speak("Threat detected, would you like me to block it?");
+    else { const li = document.createElement('li'); li.innerText = 'No threats detected.'; li.classList.add('p-2'); log.appendChild(li); speak("No threats detected, thank you for waiting."); }
+  }
+
+  // --- Misc Helpers ---
+  function updateThreatLogAfterSolve(actions) {
+    const log = document.getElementById('threat-log'); log.innerHTML = '';
+    actions.forEach(a => {
+      const li = document.createElement('li'); li.innerText = `Action: ${a}`;
+      li.classList.add('hover:bg-gray-700', 'p-2', 'rounded', 'transition'); log.appendChild(li);
+    });
+  }
+
+  function showErrorModal(msg) { document.getElementById('error-message').innerText = msg; document.getElementById('error-modal').style.display = 'flex'; }
+  function hideErrorModal() { document.getElementById('error-modal').style.display = 'none'; }
+  function showPermissionModal() { document.getElementById('permission-modal').style.display = 'flex'; }
+  function hidePermissionModal() { document.getElementById('permission-modal').style.display = 'none'; }
+
+  function handleScanButtonClick() {
+    const text = document.getElementById('run-scan').querySelector('span').innerText;
+    if (text === 'Solve Now') showSolvePermissionModal();
+    else showPermissionModal();
+  }
+
+  function showSolvePermissionModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+      <div class="modal-content">
+        <h2 class="text-xl font-semibold mb-4">Threat Mitigation Permission</h2>
+        <p class="text-gray-300 mb-6">Allow AIVivid to apply mitigation actions?</p>
+        <div class="flex justify-center space-x-4">
+          <button id="allow-solve" class="bg-primary text-white px-4 py-2 rounded-md">Allow</button>
+          <button id="deny-solve" class="bg-gray-600 text-white px-4 py-2 rounded-md">Deny</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+    document.getElementById('allow-solve').addEventListener('click', () => { modal.remove(); solveThreats(); });
+    document.getElementById('deny-solve').addEventListener('click', () => { modal.remove(); document.getElementById('run-scan').querySelector('span').innerText = 'Scan Again'; });
+  }
+
+  // --- Event Listeners ---
+  document.getElementById('run-scan').addEventListener('click', handleScanButtonClick);
+  document.getElementById('allow-access').addEventListener('click', () => { hidePermissionModal(); triggerScan(); });
+  document.getElementById('deny-access').addEventListener('click', () => { hidePermissionModal(); alert('Scan cancelled'); });
+  document.getElementById('retry-scan').addEventListener('click', () => { hideErrorModal(); triggerScan(); });
+  document.getElementById('close-error').addEventListener('click', hideErrorModal);
+
+  document.getElementById('progress-text').innerText = 'Waiting for scan...';
+</script>
+
+
+</body>
+</html>

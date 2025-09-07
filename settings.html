@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIVivid - Settings</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#1E40AF',
+            dark: '#0F172A',
+            accent: '#a3c614',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .nav-item {
+      transition: all 0.3s ease;
+    }
+    .nav-item:hover {
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+    .nav-item.active {
+      background-color: rgba(59, 130, 246, 0.1);
+      border-left: 3px solid #3B82F6;
+      color: white !important;
+    }
+    .card {
+      background-color: #1e293b;
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+<body class="bg-dark text-white font-sans">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-64 bg-dark border-r border-gray-800">
+      <div class="p-6">
+        <div class="flex items-center">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="AIVivid Logo" class="h-8 w-auto">
+          <span class="ml-2 text-xl font-bold text-accent">AIVivid</span>
+        </div>
+      </div>
+      <nav class="mt-6 px-4 space-y-2">
+        <a href="{{ url_for('user_profile.profile') }}" class="nav-item flex items-center px-4 py-3 rounded-lg text-gray-300 hover:text-white {% if request.endpoint == 'user_profile.profile' %}active{% endif %}">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A7 7 0 0112 15a7 7 0 016.879 2.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Profile
+        </a>
+        <a href="{{ url_for('user_activity.user_activity') }}" class="nav-item flex items-center px-4 py-3 rounded-lg text-gray-300 hover:text-white {% if request.endpoint == 'user_activity.user_activity' %}active{% endif %}">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h11M9 21V3m4 18h8" />
+          </svg>
+          Activity Log
+        </a>
+        <a href="{{ url_for('data_dashboard.data_dashboard') }}" class="nav-item flex items-center px-4 py-3 rounded-lg text-gray-300 hover:text-white {% if request.endpoint == 'data_dashboard.data_dashboard' %}active{% endif %}">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 11V3H4v8h7zm0 10v-8H4v8h7zm9-10V3h-7v8h7zm0 10v-8h-7v8h7z" />
+          </svg>
+          Data Dashboard
+        </a>
+        <a href="{{ url_for('settings.settings') }}" class="nav-item flex items-center px-4 py-3 rounded-lg text-white active">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Settings
+        </a>
+        <a href="{{ url_for('index') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+          <span class="w-5 h-5 mr-3 text-gray-300">&larr;</span>
+          Back to Home
+        </a>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-auto">
+      <!-- Header -->
+      <header class="bg-dark border-b border-gray-800 p-4">
+        <div class="flex justify-between items-center">
+          <h1 class="text-2xl font-semibold">Settings</h1>
+        </div>
+      </header>
+
+      <!-- Settings Form -->
+      <main class="p-6 space-y-6">
+        <div id="flash-messages">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+                <div class="mb-4 p-4 rounded bg-{{ 'green-500' if category == 'success' else 'red-500' }} text-white">{{ message }}</div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+        </div>
+
+        <div class="card max-w-4xl mx-auto space-y-6">
+          <h2 class="text-xl font-semibold text-accent">Account Settings</h2>
+          <p class="text-sm text-gray-400 border-b border-gray-700 pb-4">
+            Update your profile information and password below.
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Username -->
+            <div>
+              <label for="username" class="block text-sm font-medium text-gray-300 mb-1">Username</label>
+              <div class="flex items-center bg-gray-900 rounded-md border border-gray-700 px-3">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A7 7 0 0112 15a7 7 0 016.879 2.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <input type="text" id="username" name="username" class="ml-3 flex-1 bg-transparent text-white py-2 focus:outline-none" placeholder="Your username" value="{{ current_user.username }}" required />
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div>
+              <label for="email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+              <div class="flex items-center bg-gray-900 rounded-md border border-gray-700 px-3">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <input type="email" id="email" name="email" class="ml-3 flex-1 bg-transparent text-white py-2 focus:outline-none" placeholder="you@example.com" value="{{ current_user.email }}" required />
+              </div>
+            </div>
+
+            <!-- Password -->
+            <div class="md:col-span-2">
+              <label for="password" class="block text-sm font-medium text-gray-300 mb-1">New Password</label>
+              <div class="flex items-center bg-gray-900 rounded-md border border-gray-700 px-3">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 4h.01M4 8V6a4 4 0 018 0v2a4 4 0 018 0v2a8 8 0 01-16 0z" />
+                </svg>
+                <input type="password" id="password" name="password" class="ml-3 flex-1 bg-transparent text-white py-2 focus:outline-none" placeholder="••••••••" />
+              </div>
+              <p class="text-xs text-gray-500 mt-1">Leave blank to keep current password. Minimum 8 characters.</p>
+            </div>
+
+            <!-- Timezone -->
+            <div class="md:col-span-2">
+              <label for="timezone" class="block text-sm font-medium text-gray-300 mb-1">Timezone</label>
+              <div class="flex items-center bg-gray-900 rounded-md border border-gray-700 px-3">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l2 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <select id="timezone" name="timezone" class="ml-3 flex-1 bg-transparent text-white py-2 focus:outline-none">
+                  <option value="UTC" {% if current_user.timezone == 'UTC' %}selected{% endif %}>UTC</option>
+                  <option value="America/New_York" {% if current_user.timezone == 'America/New_York' %}selected{% endif %}>America/New York</option>
+                  <option value="Europe/London" {% if current_user.timezone == 'Europe/London' %}selected{% endif %}>Europe/London</option>
+                  <option value="Asia/Tokyo" {% if current_user.timezone == 'Asia/Tokyo' %}selected{% endif %}>Asia/Tokyo</option>
+                  <!-- Add more timezone options as needed -->
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Save Button -->
+          <div class="pt-4 text-right">
+            <button id="save-btn" class="bg-primary hover:bg-blue-600 text-white font-medium px-6 py-2 rounded-md transition-all duration-200 shadow-md hover:shadow-lg">
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- JavaScript to Fetch & Save -->
+  <script>
+    // Form validation
+    function validateForm() {
+      const username = document.getElementById('username').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      if (!username || username.length < 3) {
+        showFlashMessage('Username must be at least 3 characters long.', 'error');
+        return false;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email || !emailRegex.test(email)) {
+        showFlashMessage('Please enter a valid email address.', 'error');
+        return false;
+      }
+
+      if (password && password.length < 5) {
+        showFlashMessage('Password must be at least 5 characters long if provided.', 'error');
+        return false;
+      }
+
+      return true;
+    }
+
+    // Display flash message
+    function showFlashMessage(message, type) {
+      const flashMessages = document.getElementById('flash-messages');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `mb-4 p-4 rounded bg-${type === 'success' ? 'green-500' : 'red-500'} text-white`;
+      messageDiv.textContent = message;
+      flashMessages.innerHTML = '';
+      flashMessages.appendChild(messageDiv);
+      setTimeout(() => messageDiv.remove(), 5000); // Remove after 5 seconds
+    }
+
+    // Fetch user settings
+    async function fetchSettings() {
+      try {
+        const res = await fetch('/settings/api/settings/profile');
+
+        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        document.getElementById('username').value = data.username || '';
+        document.getElementById('email').value = data.email || '';
+        document.getElementById('timezone').value = data.timezone || 'UTC';
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+        showFlashMessage(`Failed to load settings: ${error.message}`, 'error');
+      }
+    }
+
+    // Save user settings
+    async function saveSettings() {
+      if (!validateForm()) return;
+
+      const payload = {
+        username: document.getElementById('username').value,
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value || undefined,
+        timezone: document.getElementById('timezone').value
+      };
+
+      try {
+        const res = await fetch('/settings/api/settings/profile', {
+
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        if (res.ok && result.success) {
+          showFlashMessage(result.message || 'Settings saved successfully.', 'success');
+        } else {
+          showFlashMessage(result.message || 'Failed to save settings.', 'error');
+        }
+      } catch (error) {
+        console.error('Save error:', error);
+        showFlashMessage('An error occurred while saving settings.', 'error');
+      }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchSettings();
+      document.getElementById('save-btn').addEventListener('click', saveSettings);
+    });
+  </script>
+</body>
+</html>

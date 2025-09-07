@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="threats-display.xsl"?>
+<threatDetectionSystem>
+    <metadata>
+        <version>2.1.0</version>
+        <lastUpdated>2025-01-27T10:30:00Z</lastUpdated>
+        <systemStatus>active</systemStatus>
+        <totalThreats>247</totalThreats>
+    </metadata>
+    
+    <threatCategories>
+        <category id="malware" severity="high" color="#dc2626">
+            <name>Malware</name>
+            <description>Malicious software including viruses, trojans, and ransomware</description>
+            <detectionMethods>
+                <method>Signature-based scanning</method>
+                <method>Behavioral analysis</method>
+                <method>Machine learning detection</method>
+            </detectionMethods>
+        </category>
+        
+        <category id="phishing" severity="high" color="#ea580c">
+            <name>Phishing</name>
+            <description>Fraudulent attempts to obtain sensitive information</description>
+            <detectionMethods>
+                <method>URL reputation analysis</method>
+                <method>Email content scanning</method>
+                <method>Domain verification</method>
+            </detectionMethods>
+        </category>
+        
+        <category id="ddos" severity="critical" color="#dc2626">
+            <name>DDoS Attack</name>
+            <description>Distributed Denial of Service attacks</description>
+            <detectionMethods>
+                <method>Traffic pattern analysis</method>
+                <method>Rate limiting</method>
+                <method>Anomaly detection</method>
+            </detectionMethods>
+        </category>
+        
+        <category id="intrusion" severity="high" color="#b91c1c">
+            <name>Intrusion Attempt</name>
+            <description>Unauthorized access attempts to systems</description>
+            <detectionMethods>
+                <method>Login pattern analysis</method>
+                <method>IP reputation checking</method>
+                <method>Geolocation verification</method>
+            </detectionMethods>
+        </category>
+        
+        <category id="network" severity="medium" color="#d97706">
+            <name>Network Anomaly</name>
+            <description>Unusual network traffic patterns</description>
+            <detectionMethods>
+                <method>Bandwidth monitoring</method>
+                <method>Protocol analysis</method>
+                <method>Port scanning detection</method>
+            </detectionMethods>
+        </category>
+        
+        <category id="system" severity="low" color="#059669">
+            <name>System Alert</name>
+            <description>System maintenance and update notifications</description>
+            <detectionMethods>
+                <method>System monitoring</method>
+                <method>Update checking</method>
+                <method>Performance analysis</method>
+            </detectionMethods>
+        </category>
+    </threatCategories>
+    
+    <activeThreats>
+        <threat id="T001" category="intrusion" severity="high" status="active">
+            <timestamp>2025-01-27T10:28:00Z</timestamp>
+            <title>Suspicious Login Attempt</title>
+            <description>Multiple failed login attempts detected from IP 192.168.1.100</description>
+            <source>
+                <ip>192.168.1.100</ip>
+                <location>Unknown</location>
+                <userAgent>Mozilla/5.0 (Windows NT 10.0; Win64; x64)</userAgent>
+            </source>
+            <impact>High</impact>
+            <recommendedAction>Block IP and investigate user account</recommendedAction>
+            <affectedSystems>
+                <system>Web Portal</system>
+                <system>User Authentication</system>
+            </affectedSystems>
+        </threat>
+        
+        <threat id="T002" category="malware" severity="critical" status="quarantined">
+            <timestamp>2025-01-27T10:25:00Z</timestamp>
+            <title>Malware Detected</title>
+            <description>Trojan.Win32.Generic detected in file suspicious.exe</description>
+            <source>
+                <file>C:\Users\Admin\Downloads\suspicious.exe</file>
+                <hash>a1b2c3d4e5f6789012345678901234567890abcd</hash>
+                <size>2048576</size>
+            </source>
+            <impact>Critical</impact>
+            <recommendedAction>File quarantined, full system scan recommended</recommendedAction>
+            <affectedSystems>
+                <system>Workstation-001</system>
+            </affectedSystems>
+        </threat>
+        
+        <threat id="T003" category="phishing" severity="medium" status="blocked">
+            <timestamp>2025-01-27T10:20:00Z</timestamp>
+            <title>Phishing Email Blocked</title>
+            <description>Suspicious email claiming to be from bank detected</description>
+            <source>
+                <email>fake@suspicious-bank.com</email>
+                <subject>Urgent: Verify Your Account</subject>
+                <recipient>user@company.com</recipient>
+            </source>
+            <impact>Medium</impact>
+            <recommendedAction>Email blocked, user notified</recommendedAction>
+            <affectedSystems>
+                <system>Email Gateway</system>
+            </affectedSystems>
+        </threat>
+        
+        <threat id="T004" category="ddos" severity="high" status="mitigated">
+            <timestamp>2025-01-27T10:15:00Z</timestamp>
+            <title>DDoS Attack Detected</title>
+            <description>High volume of requests from multiple IPs targeting web server</description>
+            <source>
+                <targetPort>80</targetPort>
+                <requestVolume>50000</requestVolume>
+                <sourceIPs>127</sourceIPs>
+            </source>
+            <impact>High</impact>
+            <recommendedAction>Rate limiting applied, monitoring continued</recommendedAction>
+            <affectedSystems>
+                <system>Web Server</system>
+                <system>Load Balancer</system>
+            </affectedSystems>
+        </threat>
+        
+        <threat id="T005" category="network" severity="medium" status="investigating">
+            <timestamp>2025-01-27T10:10:00Z</timestamp>
+            <title>Unusual Network Traffic</title>
+            <description>Abnormal data transfer patterns detected on port 443</description>
+            <source>
+                <port>443</port>
+                <protocol>HTTPS</protocol>
+                <dataVolume>500MB</dataVolume>
+            </source>
+            <impact>Medium</impact>
+            <recommendedAction>Monitor traffic patterns, analyze data flow</recommendedAction>
+            <affectedSystems>
+                <system>Network Infrastructure</system>
+            </affectedSystems>
+        </threat>
+    </activeThreats>
+    
+    <statistics>
+        <dailyStats date="2025-01-27">
+            <threatsDetected>15</threatsDetected>
+            <threatsBlocked>12</threatsBlocked>
+            <threatsInvestigating>3</threatsInvestigating>
+            <systemUptime>99.9</systemUptime>
+        </dailyStats>
+        
+        <weeklyTrends>
+            <trend category="malware" change="+5%" direction="up"/>
+            <trend category="phishing" change="-12%" direction="down"/>
+            <trend category="ddos" change="+23%" direction="up"/>
+            <trend category="intrusion" change="-8%" direction="down"/>
+        </weeklyTrends>
+    </statistics>
+    
+    <systemConfiguration>
+        <scanningEnabled>true</scanningEnabled>
+        <realTimeProtection>true</realTimeProtection>
+        <automaticUpdates>true</automaticUpdates>
+        <alertNotifications>true</alertNotifications>
+        <quarantineEnabled>true</quarantineEnabled>
+        <logRetentionDays>90</logRetentionDays>
+    </systemConfiguration>
+</threatDetectionSystem>
+
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="threats">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="threat" maxOccurs="unbounded">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="id" type="xs:string"/>
+                            <xs:element name="name" type="xs:string"/>
+                            <xs:element name="type" type="xs:string"/>
+                            <xs:element name="severity" type="xs:string"/>
+                            <xs:element name="timestamp" type="xs:dateTime"/>
+                            <xs:element name="status" type="xs:string"/>
+                            <xs:element name="description" type="xs:string" minOccurs="0"/>
+                            <xs:element name="source_ip" type="xs:string" minOccurs="0"/>
+                            <xs:element name="destination_ip" type="xs:string" minOccurs="0"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

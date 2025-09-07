@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIVivid - Security Alerts</title>
+  <!-- Tailwind CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#1E40AF',
+            dark: '#0F172A',
+            accent: '#a3c614',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    .nav-item {
+      transition: all 0.3s ease;
+    }
+
+    .nav-item:hover {
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+
+    .nav-item.active {
+      background-color: rgba(59, 130, 246, 0.1);
+      border-left: 3px solid #3B82F6;
+      color: white !important;
+    }
+  </style>
+</head>
+<body class="bg-dark text-white font-sans">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-64 bg-dark border-r border-gray-800">
+      <div class="p-6">
+        <div class="flex items-center">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="AIVivid Logo" class="h-8 w-auto" />
+          <span class="ml-2 text-xl font-bold text-accent">AIVivid</span>
+        </div>
+      </div>
+      <nav class="mt-6 flex flex-col h-[calc(100%-80px)]">
+        <div class="px-4 space-y-2 flex-grow">
+          <!-- Dashboard -->
+          <a href="{{ url_for('user_dashboard.user_dashboard') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+            Dashboard
+          </a>
+
+          <!-- Security Scan -->
+          <a href="{{ url_for('security_scan.security_scan_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            </svg>
+            Security Scan
+          </a>
+
+          <!-- Security Alerts -->
+          <a href="{{ url_for('alerts.user_security_alerts') }}" class="nav-item active flex items-center px-4 py-3 text-white bg-[#1E40AF] hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.072 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+            Security Alerts
+          </a>
+
+          <!-- Security Recommendations -->
+          <a href="{{ url_for('security_recommendations.recommendations_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12l2 2l4 -4M12 22C7.03 20.94 4 16.5 4 12V6l8-4l8 4v6c0 4.5-3 8.94-8 10z"/>
+            </svg>
+            Security Recommendations
+          </a>
+
+          <!-- ML Features -->
+          <a href="{{ url_for('ml_features.ml_features_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 9h6v6H9V9zM4 4v4m0 8v4m4 4h4m8-4v-4m0-8V4m-4-4h-4M4 12H2m20 0h-2M12 4V2m0 20v-2" />
+            </svg>
+            ML Features
+          </a>
+
+          <!-- Threat Details -->
+          <a href="{{ url_for('threat.threat_details_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            Threat Details
+          </a>
+
+          <!-- Model -->
+          <a href="{{ url_for('model.model_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 16v-2m8-6h2M2 12H4m14.828-5.172l1.414 1.414M4.757 19.243l1.414-1.414M19.243 19.243l-1.414-1.414M4.757 4.757L6.172 6.17M9 12a3 3 0 006 0 3 3 0 00-6 0z"/>
+            </svg>
+            Model
+          </a>
+
+          <!-- Monitoring -->
+       <a href="{{ url_for('monitoring.monitoring_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 014-4h3m-7 6v2m0 0a2 2 0 01-2 2H6a2 2 0 01-2-2v-2a2 2 0 012-2h1m6-6V7a2 2 0 012-2h2a2 2 0 012 2v2"/>
+            </svg>
+            Monitoring
+          </a>
+
+          <!-- Blog -->
+          <a href="{{ url_for('blog.blog_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h7l2 2h5a2 2 0 012 2v12a2 2 0 01-2 2z"/>
+            </svg>
+            Blog
+          </a>
+        </div>
+        <div class="px-4 pb-4">
+          <a href="{{ url_for('index') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Return to Home
+          </a>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-y-auto">
+      <!-- Header -->
+      <header class="bg-dark border-b border-gray-800 p-4">
+        <div class="flex justify-between items-center">
+          <h1 class="text-2xl font-semibold">Security Alerts (Current)</h1>
+          <button id="exportReportBtn" class="bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-md transition">Export Report</button>
+        </div>
+      </header>
+
+      <!-- Content -->
+      <main class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="bg-gray-800 p-4 rounded-lg shadow">
+            <p class="text-sm text-gray-400">Unread Alerts</p>
+            <h2 id="unreadCount" class="text-2xl font-bold text-red-500">0</h2>
+          </div>
+          <div class="bg-gray-800 p-4 rounded-lg shadow">
+            <p class="text-sm text-gray-400">False Positive Alerts</p>
+            <h2 id="falsePositiveCount" class="text-2xl font-bold text-yellow-400">0</h2>
+          </div>
+          <div class="bg-gray-800 p-4 rounded-lg shadow">
+            <p class="text-sm text-gray-400">Total Alerts</p>
+            <h2 id="totalCount" class="text-2xl font-bold text-blue-400">0</h2>
+          </div>
+          <div class="bg-gray-800 p-4 rounded-lg shadow">
+            <p class="text-sm text-gray-400">Resolved Today</p>
+            <h2 id="resolvedCount" class="text-2xl font-bold text-green-400">0</h2>
+          </div>
+        </div>
+
+        <!-- Alerts Table -->
+        <div class="bg-gray-800 p-4 rounded-lg shadow">
+          <h2 class="text-xl font-semibold mb-4">Recent Alerts</h2>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead>
+                <tr class="text-left text-gray-400">
+                  <th class="px-4 py-2">Time</th>
+                  <th class="px-4 py-2">Title</th>
+                  <th class="px-4 py-2">Message</th>
+                  <th class="px-4 py-2">Status</th>
+                  <th class="px-4 py-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="alertsTableBody" class="text-white divide-y divide-gray-700">
+                <!-- Alerts rows inserted dynamically here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+  const socket = io(); // Connect to Flask-SocketIO backend
+
+  function formatTime(isoString) {
+    const date = new Date(isoString);
+    return date.toLocaleString(undefined, {
+      hour: '2-digit', minute: '2-digit', hour12: true,
+      day: '2-digit', month: 'short', year: 'numeric'
+    });
+  }
+
+  // Render a single alert row
+  function renderAlertRow(alert) {
+    return `
+      <tr>
+        <td class="px-4 py-2">${formatTime(alert.created_at)}</td>
+        <td class="px-4 py-2">${alert.title}</td>
+        <td class="px-4 py-2">${alert.message}</td>
+        <td class="px-4 py-2 ${alert.false_positive ? 'text-yellow-400' : alert.read ? 'text-green-400' : 'text-red-500'}">
+          ${alert.false_positive ? 'False Positive' : alert.read ? 'Read' : 'Unread'}
+        </td>
+        <td class="px-4 py-2 space-x-2">
+          ${!alert.read ? `<button data-id="${alert.id}" class="readBtn bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm">Mark Read</button>` : ''}
+          ${!alert.false_positive ? `<button data-id="${alert.id}" class="falsePositiveBtn bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-sm">False Positive</button>` : ''}
+          <button data-id="${alert.id}" class="deleteBtn bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm">Delete</button>
+        </td>
+      </tr>
+    `;
+  }
+
+  // Refresh entire list from backend
+  async function loadAlerts() {
+    const res = await fetch('/user/security_alerts/alerts');
+    const alerts = await res.json();
+
+    const tbody = document.getElementById('alertsTableBody');
+    tbody.innerHTML = alerts.map(renderAlertRow).join('');
+    updateCounts(alerts);
+    attachEventHandlers();
+  }
+
+  // Update summary counts
+  function updateCounts(alerts) {
+    let unread = 0, falsePositive = 0, total = alerts.length, resolvedToday = 0;
+    const today = new Date().toISOString().split('T')[0];
+    alerts.forEach(a => {
+      if (!a.read) unread++;
+      if (a.false_positive) falsePositive++;
+      if ((a.read || a.false_positive) && a.created_at.startsWith(today)) {
+        resolvedToday++;
+      }
+    });
+    document.getElementById('unreadCount').textContent = unread;
+    document.getElementById('falsePositiveCount').textContent = falsePositive;
+    document.getElementById('totalCount').textContent = total;
+    document.getElementById('resolvedCount').textContent = resolvedToday;
+  }
+
+  // Re-bind button handlers
+  function attachEventHandlers() {
+    document.querySelectorAll('.readBtn').forEach(btn => {
+      btn.onclick = async e => {
+        const id = btn.getAttribute('data-id');
+        await fetch(`/alerts/${id}/mark_read`, { method: 'POST' });
+        loadAlerts();
+      };
+    });
+    document.querySelectorAll('.falsePositiveBtn').forEach(btn => {
+      btn.onclick = async e => {
+        const id = btn.getAttribute('data-id');
+        await fetch(`/alerts/${id}/mark_false_positive`, { method: 'POST' });
+        loadAlerts();
+      };
+    });
+    document.querySelectorAll('.deleteBtn').forEach(btn => {
+      btn.onclick = async e => {
+        const id = btn.getAttribute('data-id');
+        await fetch(`/alerts/${id}/delete`, { method: 'DELETE' });
+        loadAlerts();
+      };
+    });
+  }
+
+  // Initial load
+  document.addEventListener('DOMContentLoaded', () => {
+    loadAlerts();
+
+    // Real-time: listen for new alerts
+    socket.on('new_alert', data => {
+      const tbody = document.getElementById('alertsTableBody');
+      tbody.insertAdjacentHTML('afterbegin', renderAlertRow(data));
+      // update counts by reloading (or smarter, increment counts directly)
+      loadAlerts();
+    });
+  });
+</script>
+</body>
+</html>

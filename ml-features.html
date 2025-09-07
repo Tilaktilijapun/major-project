@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIVivid - ML Features</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#1E40AF',
+                        dark: '#0F172A',
+                        accent: '#a3c614',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'fadeIn': 'fadeIn 1s ease-out forwards',
+                        'fadeInUp': 'fadeInUp 0.8s ease-out forwards',
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-ring': 'pulse-ring 3s cubic-bezier(0.215, 0.61, 0.355, 1) infinite',
+                        'data-flow': 'data-flow 8s linear infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        },
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' }
+                        },
+                        'pulse-ring': {
+                            '0%': { transform: 'scale(0.33)', opacity: '1' },
+                            '80%, 100%': { opacity: '0' }
+                        },
+                        'data-flow': {
+                            '0%': { strokeDashoffset: '1000' },
+                            '100%': { strokeDashoffset: '0' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .nav-item {
+            transition: all 0.3s ease;
+        }
+        .nav-item:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        .nav-item.active {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid #3B82F6;
+            color: white !important;
+        }
+        .neural-node {
+            transition: all 0.3s ease;
+        }
+        .neural-node:hover {
+            filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.8));
+            transform: scale(1.1);
+        }
+        .neural-connection {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: data-flow 8s linear infinite;
+        }
+        .pulse-ring {
+            animation: pulse-ring 3s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        .code-block {
+            background-color: #1a2234;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease-out;
+        }
+        .code-block.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .code-comment { color: #6B7280; }
+        .code-keyword { color: #EC4899; }
+        .code-function { color: #3B82F6; }
+        .code-string { color: #10B981; }
+        .code-number { color: #F59E0B; }
+        .code-line { display: block; line-height: 1.5; }
+        .gradient-text {
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            background-image: linear-gradient(90deg, #3B82F6, #a3c614);
+        }
+        .recommendation-card {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+        .recommendation-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .recommendation-card:hover {
+            transform: translateY(-5px);
+            border-color: #3B82F6;
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+        }
+        .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        .group:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+        .action-button {
+            transition: all 0.3s ease;
+        }
+        .action-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-dark text-white font-sans animate-fadeIn">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-64 bg-dark border-r border-gray-800">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="AIVivid Logo" class="h-8 w-auto" />
+                    <span class="ml-2 text-xl font-bold text-accent">AIVivid</span>
+                </div>
+            </div>
+            <nav class="mt-6 flex flex-col h-[calc(100%-80px)]">
+                <div class="px-4 space-y-2 flex-grow">
+                    <a href="{{ url_for('user_dashboard.user_dashboard') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                        Dashboard
+                    </a>
+                    <a href="{{ url_for('security_scan.security_scan_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                        Security Scan
+                    </a>
+                    <a href="{{ url_for('alerts.user_security_alerts') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.072 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+</svg>
+                        Security Alerts
+                    </a>
+                    <a href="{{ url_for('security_recommendations.recommendations_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2l4 -4M12 22C7.03 20.94 4 16.5 4 12V6l8-4l8 4v6c0 4.5-3 8.94-8 10z"/>
+                        </svg>
+                        Security Recommendations
+                    </a>
+                    <a href="{{ url_for('ml_features.ml_features_page') }}" class="nav-item active flex items-center px-4 py-3 text-white bg-[#1E40AF] hover:text-white rounded-lg">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9h6v6H9V9zM4 4v4m0 8v4m4 4h4m8-4v-4m0-8V4m-4-4h-4M4 12H2m20 0h-2M12 4V2m0 20v-2" />
+                        </svg>
+                        ML Features
+                    </a>
+                    <a href="{{ url_for('threat.threat_details_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+                        Threat Details
+                    </a>
+                    <a href="{{ url_for('model.model_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 16v-2m8-6h2M2 12H4m14.828-5.172l1.414 1.414M4.757 19.243l1.414-1.414M19.243 19.243l-1.414-1.414M4.757 4.757L6.172 6.17M9 12a3 3 0 006 0 3 3 0 00-6 0z"/>
+                        </svg>
+                        Model
+                    </a>
+                    <a href="{{ url_for('monitoring.monitoring_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 014-4h3m-7 6v2m0 0a2 2 0 01-2 2H6a2 2 0 01-2-2v-2a2 2 0 012-2h1m6-6V7a2 2 0 012-2h2a2 2 0 012 2v2"/>
+                        </svg>
+                        Monitoring
+                    </a>
+                    <a href="{{ url_for('blog.blog_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h7l2 2h5a2 2 0 012 2v12a2 2 0 01-2 2z"/>
+                        </svg>
+                        Blog
+                    </a>
+                </div>
+                <div class="px-4 pb-4">
+                    <a href="{{ url_for('index') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                        Return to Home
+                    </a>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 overflow-y-auto">
+            <!-- Header -->
+            <header class="bg-dark border-b border-gray-800 p-4">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-4xl md:text-5xl font-bold animate-fadeInUp">
+                        ML <span class="gradient-text">Features</span>
+                    </h1>
+                    <button class="action-button bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-md">Export Recommendations</button>
+                </div>
+            </header>
+
+            <!-- Hero Section -->
+            <section class="relative overflow-hidden">
+                <div class="absolute inset-0 z-0">
+                    <div class="absolute inset-0 bg-gradient-to-r from-dark to-secondary opacity-90"></div>
+                    <div class="absolute inset-0 bg-[url('./assets/images/grid-pattern.png')] opacity-20"></div>
+                </div>
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <p class="mt-6 text-xl text-gray-300 max-w-lg animate-fadeInUp" style="animation-delay: 0.2s;">
+                                Leverage AI-driven insights to strengthen your security posture with tailored recommendations.
+                            </p>
+                            <div class="mt-10 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                                <a href="#recommendations" class="action-button bg-primary hover:bg-blue-600 text-white px-8 py-4 rounded-md text-lg font-medium text-center">View Recommendations</a>
+                                <a href="#technical-details" class="action-button border border-gray-600 hover:border-gray-400 text-white px-8 py-4 rounded-md text-lg font-medium text-center">Technical Details</a>
+                            </div>
+                        </div>
+                        <div class="flex justify-center">
+                            <div class="relative flex items-center space-x-8">
+                                <!-- Neural Graph Visualization -->
+                                <svg width="400" height="300" viewBox="0 0 400 300" class="animate-float">
+                                    <defs>
+                                        <radialGradient id="nodeGlow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                                            <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.6" />
+                                            <stop offset="100%" stop-color="#3B82F6" stop-opacity="0" />
+                                        </radialGradient>
+                                    </defs>
+                                    <!-- Connections -->
+                                    <g>
+                                        <path d="M80,100 L200,80" class="neural-connection" stroke="#3B82F6" stroke-width="1.5" fill="none" opacity="0.6" />
+                                        <path d="M80,100 L200,160" class="neural-connection" stroke="#3B82F6" stroke-width="1.5" fill="none" opacity="0.6" />
+                                        <path d="M80,100 L200,240" class="neural-connection" stroke="#3B82F6" stroke-width="1.5" fill="none" opacity="0.6" />
+                                        <path d="M200,80 L320,140" class="neural-connection" stroke="#3B82F6" stroke-width="1.5" fill="none" opacity="0.6" />
+                                        <path d="M200,160 L320,140" class="neural-connection" stroke="#3B82F6" stroke-width="1.5" fill="none" opacity="0.6" />
+                                        <path d="M200,240 L320,140" class="neural-connection" stroke="#3B82F6" stroke-width="1.5" fill="none" opacity="0.6" />
+                                    </g>
+                                    <!-- Nodes -->
+                                    <g>
+                                        <circle cx="80" cy="100" r="15" fill="#0F172A" stroke="#3B82F6" stroke-width="2" class="neural-node" />
+                                        <circle cx="80" cy="100" r="25" fill="url(#nodeGlow)" class="pulse-ring" />
+                                        <text x="80" y="100" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="10">Alerts</text>
+                                        <circle cx="200" cy="80" r="15" fill="#0F172A" stroke="#a3c614" stroke-width="2" class="neural-node" />
+                                        <circle cx="200" cy="80" r="25" fill="url(#nodeGlow)" class="pulse-ring" />
+                                        <text x="200" y="80" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="10">Analysis</text>
+                                        <circle cx="200" cy="160" r="15" fill="#0F172A" stroke="#a3c614" stroke-width="2" class="neural-node" />
+                                        <circle cx="200" cy="160" r="25" fill="url(#nodeGlow)" class="pulse-ring" />
+                                        <text x="200" y="160" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="10">ML Model</text>
+                                        <circle cx="200" cy="240" r="15" fill="#0F172A" stroke="#a3c614" stroke-width="2" class="neural-node" />
+                                        <circle cx="200" cy="240" r="25" fill="url(#nodeGlow)" class="pulse-ring" />
+                                        <text x="200" y="240" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="10">Context</text>
+                                        <circle cx="320" cy="140" r="15" fill="#0F172A" stroke="#1E40AF" stroke-width="2" class="neural-node" />
+                                        <circle cx="320" cy="140" r="25" fill="url(#nodeGlow)" class="pulse-ring" />
+                                        <text x="320" y="140" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="10">Action</text>
+                                    </g>
+                                    <!-- Layer Labels -->
+                                    <text x="80" y="40" text-anchor="middle" fill="white" font-size="14" font-weight="bold">Input</text>
+                                    <text x="200" y="40" text-anchor="middle" fill="white" font-size="14" font-weight="bold">Processing</text>
+                                    <text x="320" y="40" text-anchor="middle" fill="white" font-size="14" font-weight="bold">Output</text>
+                                </svg>
+                                <!-- Lottie Animation -->
+                                <div class="animate-float" style="animation-delay: 0.3s;">
+                                    <lottie-player src="https://assets.lottiefiles.com/packages/lf20_kkflmtur.json" background="transparent" speed="1" style="width: 150px; height: 150px;" loop autoplay></lottie-player>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recommendations Section -->
+            <section id="recommendations" class="py-20 bg-gray-900">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center mb-16">
+                        <h2 class="text-sm uppercase tracking-wider text-primary animate-fadeInUp">ACTIONABLE INSIGHTS</h2>
+                        <h3 class="mt-2 text-3xl md:text-4xl font-bold animate-fadeInUp" style="animation-delay: 0.1s;">Tailored Security Recommendations</h3>
+                        <p class="mt-4 max-w-2xl mx-auto text-gray-400 animate-fadeInUp" style="animation-delay: 0.2s;">
+                            AI-driven recommendations to mitigate risks and enhance your security posture.
+                        </p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div class="recommendation-card group bg-dark p-8 rounded-lg border border-gray-800">
+                            <div class="w-16 h-16 mx-auto flex items-center justify-center rounded-full bg-blue-900 bg-opacity-20 mb-6">
+                                <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                </svg>
+                            </div>
+                            <h4 class="text-xl font-semibold text-center mb-4">Patch Management</h4>
+                            <p class="text-gray-400 text-center">Apply the latest security patches to all servers to address vulnerabilities detected in recent scans.</p>
+                            <div class="mt-6 text-center">
+                                <span class="group inline-block px-3 py-1 text-xs font-medium bg-red-900 bg-opacity-30 text-red-400 rounded-full animate-pulse relative">
+                                    Priority: Critical
+                                    <span class="tooltip absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 w-40 text-center">Immediate action required to prevent exploits.</span>
+                                </span>
+                                <span class="group inline-block px-3 py-1 text-xs font-medium bg-blue-900 bg-opacity-30 text-blue-400 rounded-full ml-2 relative">
+                                    Due: 2025-07-05
+                                    <span class="tooltip absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 w-40 text-center">Complete by the specified date to ensure compliance.</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="recommendation-card group bg-dark p-8 rounded-lg border border-gray-800">
+                            <div class="w-16 h-16 mx-auto flex items-center justify-center rounded-full bg-blue-900 bg-opacity-20 mb-6">
+                                <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"></path>
+                                </svg>
+                            </div>
+                            <h4 class="text-xl font-semibold text-center mb-4">Firewall Configuration</h4>
+                            <p class="text-gray-400 text-center">Review and update firewall rules to block unauthorized access attempts identified in recent alerts.</p>
+                            <div class="mt-6 text-center">
+                                <span class="group inline-block px-3 py-1 text-xs font-medium bg-yellow-900 bg-opacity-30 text-yellow-400 rounded-full animate-pulse relative">
+                                    Priority: High
+                                    <span class="tooltip absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 w-40 text-center">Address promptly to enhance network security.</span>
+                                </span>
+                                <span class="group inline-block px-3 py-1 text-xs font-medium bg-blue-900 bg-opacity-30 text-blue-400 rounded-full ml-2 relative">
+                                    Due: 2025-07-07
+                                    <span class="tooltip absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 w-40 text-center">Complete by the specified date to ensure compliance.</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="recommendation-card group bg-dark p-8 rounded-lg border border-gray-800">
+                            <div class="w-16 h-16 mx-auto flex items-center justify-center rounded-full bg-blue-900 bg-opacity-20 mb-6">
+                                <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                                </svg>
+                            </div>
+                            <h4 class="text-xl font-semibold text-center mb-4">User Access Review</h4>
+                            <p class="text-gray-400 text-center">Conduct a full audit of user permissions to ensure least privilege access across all systems.</p>
+                            <div class="mt-6 text-center">
+                                <span class="group inline-block px-3 py-1 text-xs font-medium bg-blue-900 bg-opacity-30 text-blue-400 rounded-full animate-pulse relative">
+                                    Priority: Medium
+                                    <span class="tooltip absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 w-40 text-center">Plan and execute to maintain secure access control.</span>
+                                </span>
+                                <span class="group inline-block px-3 py-1 text-xs font-medium bg-blue-900 bg-opacity-30 text-blue-400 rounded-full ml-2 relative">
+                                    Due: 2025-07-10
+                                    <span class="tooltip absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 w-40 text-center">Complete by the specified date to ensure compliance.</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Technical Details Section -->
+            <section id="technical-details" class="py-20 bg-dark">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center mb-16">
+                        <h2 class="text-sm uppercase tracking-wider text-primary animate-fadeInUp">TECHNICAL IMPLEMENTATION</h2>
+                        <h3 class="mt-2 text-3xl md:text-4xl font-bold animate-fadeInUp" style="animation-delay: 0.1s;">Recommendation Engine</h3>
+                        <p class="mt-4 max-w-2xl mx-auto text-gray-400 animate-fadeInUp" style="animation-delay: 0.2s;">
+                            Our recommendation system leverages AI to prioritize and suggest actionable security measures.
+                        </p>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <div class="relative">
+                                <div class="absolute -inset-1 bg-gradient-to-r from-primary to-blue-400 rounded-lg blur opacity-20"></div>
+                                <div class="relative bg-dark border border-gray-800 rounded-lg p-8">
+                                    <h4 class="text-xl font-semibold mb-6 animate-fadeInUp">Recommendation Algorithm</h4>
+                                    <div class="code-block">
+                                        <span class="code-line"><span class="code-keyword">import</span> pandas <span class="code-keyword">as</span> pd</span>
+                                        <span class="code-line"><span class="code-keyword">from</span> sklearn.ensemble <span class="code-keyword">import</span> RandomForestClassifier</span>
+                                        <span class="code-line"></span>
+                                        <span class="code-line"><span class="code-comment"># Define recommendation model</span></span>
+                                        <span class="code-line"><span class="code-keyword">def</span> <span class="code-function">generate_recommendations</span>(alert_data):</span>
+                                        <span class="code-line">    <span class="code-comment"># Preprocess alert data</span></span>
+                                        <span class="code-line">    features = preprocess_alerts(alert_data)</span>
+                                        <span class="code-line"></span>
+                                        <span class="code-line">    <span class="code-comment"># Load trained model</span></span>
+                                        <span class="code-line">    model = RandomForestClassifier(n_estimators=<span class="code-number">100</span>)</span>
+                                        <span class="code-line">    model.load_model(<span class="code-string">'recommendation_model.pkl'</span>)</span>
+                                        <span class="code-line"></span>
+                                        <span class="code-line">    <span class="code-comment"># Predict recommendations</span></span>
+                                        <span class="code-line">    priorities = model.predict(features)</span>
+                                        <span class="code-line"></span>
+                                        <span class="code-line">    <span class="code-comment"># Format recommendations</span></span>
+                                        <span class="code-line">    recommendations = format_recommendations(priorities)</span>
+                                        <span class="code-line">    <span class="code-keyword">return</span> recommendations</span>
+                                    </div>
+                                    <h4 class="text-xl font-semibold mt-8 mb-6 animate-fadeInUp">API Integration</h4>
+                                    <div class="code-block">
+                                        <span class="code-line"><span class="code-keyword">from</span> flask <span class="code-keyword">import</span> Flask, jsonify</span>
+                                        <span class="code-line"></span>
+                                        <span class="code-line">app = Flask(__name__)</span>
+                                        <span class="code-line"></span>
+                                        <span class="code-line"><span class="code-annotation">@app.route</span>(<span class="code-string">'/api/recommendations'</span>, methods=[<span class="code-string">'POST'</span>])</span>
+                                        <span class="code-line"><span class="code-keyword">def</span> <span class="code-function">get_recommendations</span>():</span>
+                                        <span class="code-line">    alert_data = request.json.get(<span class="code-string">'alerts'</span>)</span>
+                                        <span class="code-line">    recommendations = generate_recommendations(alert_data)</span>
+                                        <span class="code-line">    <span class="code-keyword">return</span> jsonify(recommendations)</span>
+                                        <span class="code-line"></span>
+                                        <span class="code-line"><span class="code-keyword">if</span> __name__ == <span class="code-string">'__main__'</span>:</span>
+                                        <span class="code-line">    app.run(debug=<span class="code-keyword">True</span>)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="relative">
+                                <div class="absolute -inset-1 bg-gradient-to-r from-primary to-blue-400 rounded-lg blur opacity-20"></div>
+                                <div class="relative bg-dark border border-gray-800 rounded-lg p-8">
+                                    <h4 class="text-xl font-semibold mb-6 animate-fadeInUp">Recommendation Process</h4>
+                                    <div class="space-y-6">
+                                        <div class="flex items-center">
+                                            <div class="w-12 h-12 rounded-full bg-blue-900 bg-opacity-20 flex items-center justify-center mr-4 flex-shrink-0">
+                                                <span class="text-primary font-bold">1</span>
+                                            </div>
+                                            <div>
+                                                <h5 class="font-medium text-lg">Alert Collection</h5>
+                                                <p class="text-gray-400 mt-1">Gather security alerts from various system components.</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <div class="w-12 h-12 rounded-full bg-blue-900 bg-opacity-20 flex items-center justify-center mr-4 flex-shrink-0">
+                                                <span class="text-primary font-bold">2</span>
+                                            </div>
+                                            <div>
+                                                <h5 class="font-medium text-lg">Threat Analysis</h5>
+                                                <p class="text-gray-400 mt-1">Analyze alerts using ML models to identify patterns and risks.</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <div class="w-12 h-12 rounded-full bg-blue-900 bg-opacity-20 flex items-center justify-center mr-4 flex-shrink-0">
+                                                <span class="text-primary font-bold">3</span>
+                                            </div>
+                                            <div>
+                                                <h5 class="font-medium text-lg">Prioritization</h5>
+                                                <p class="text-gray-400 mt-1">Rank recommendations based on severity and system context.</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <div class="w-12 h-12 rounded-full bg-blue-900 bg-opacity-20 flex items-center justify-center mr-4 flex-shrink-0">
+                                                <span class="text-primary font-bold">4</span>
+                                            </div>
+                                            <div>
+                                                <h5 class="font-medium text-lg">Actionable Insights</h5>
+                                                <p class="text-gray-400 mt-1">Generate clear, actionable steps to mitigate identified risks.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Script for Interactivity -->
+    <script>
+        // Initialize Scroll-Reveal Effects
+        document.addEventListener('DOMContentLoaded', () => {
+            const elements = document.querySelectorAll('.recommendation-card, .code-block');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            elements.forEach(el => observer.observe(el));
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIVivid - User Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#1E40AF',
+            dark: '#0F172A',
+            accent: '#a3c614',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .nav-item { transition: all 0.3s ease; }
+    .nav-item:hover { background-color: rgba(59, 130, 246, 0.1); }
+    .nav-item.active {
+      background-color: rgba(59, 130, 246, 0.1);
+      border-left: 3px solid #3B82F6;
+      color: white !important;
+    }
+    .widget {
+      transition: all 0.3s ease;
+      opacity: 0;
+      transform: translateY(20px);
+      border-radius: 12px;
+      background: linear-gradient(145deg, #1f2937, #111827);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    .widget.visible { opacity: 1; transform: translateY(0); }
+    .widget:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #1F2A44 25%, #2D3A55 50%, #1F2A44 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+    }
+    @keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .progress-bar { transition: width 1s ease-in-out; }
+    .counter { transition: all 1s ease-in-out; }
+    .tip-card { transition: all 0.5s ease; }
+    .alert-card { transition: all 0.3s ease; }
+    .alert-card:hover { transform: scale(1.05); }
+    .chart-container { position: relative; margin: auto; height: 200px; padding: 16px; }
+    .curved-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+    .timeline-container { display: flex; overflow-x: auto; padding-bottom: 1rem; }
+    .timeline-item { flex: 0 0 auto; min-width: 200px; margin-right: 1rem; transition: all 0.3s ease; }
+    .timeline-item:hover { transform: translateY(-3px); }
+    .gauge-container { position: relative; width: 100%; height: 200px; }
+    .access-request { transition: all 0.3s ease; }
+    .access-request:hover { background-color: rgba(59, 130, 246, 0.1); }
+    .scan-result-card { transition: all 0.3s ease; }
+    .scan-result-card:hover { transform: scale(1.02); }
+    .threat-critical { background-color: rgba(239, 68, 68, 0.2); }
+    .threat-high { background-color: rgba(249, 115, 22, 0.2); }
+    .threat-medium { background-color: rgba(234, 179, 8, 0.2); }
+    .threat-low { background-color: rgba(34, 197, 94, 0.2); }
+    .enhanced-card { 
+      background: linear-gradient(145deg, #1f2937, #111827);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+      transition: all 0.3s ease;
+    }
+    .enhanced-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+    }
+    .chart-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    .threat-metric {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 12px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+    .threat-metric:hover {
+      background: rgba(59, 130, 246, 0.1);
+    }
+  </style>
+</head>
+<body class="bg-dark text-white font-sans">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-64 bg-dark border-r border-gray-800">
+      <div class="p-6">
+        <div class="flex items-center">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="AIVivid Logo" class="h-8 w-auto">
+          <span class="ml-2 text-xl font-bold text-accent">AIVivid</span>
+        </div>
+      </div>
+      <nav class="mt-6 flex flex-col h-[calc(100%-80px)]">
+        <div class="px-4 space-y-2 flex-grow">
+          <a href="{{ url_for('user_dashboard.user_dashboard') }}" class="nav-item active flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+            Dashboard
+          </a>
+          <a href="{{ url_for('security_scan.security_scan_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            </svg>
+            Security Scan
+          </a>
+          <a href="{{ url_for('alerts.user_security_alerts') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.072 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+            Security Alerts
+          </a>
+          <a href="{{ url_for('security_recommendations.recommendations_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2l4 -4M12 22C7.03 20.94 4 16.5 4 12V6l8-4l8 4v6c0 4.5-3 8.94-8 10z"/>
+            </svg>
+            Security Recommendations
+          </a>
+          <a href="{{ url_for('ml_features.ml_features_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9h6v6H9V9zM4 4v4m0 8v4m4 4h4m8-4v-4m0-8V4m-4-4h-4M4 12H2m20 0h-2M12 4V2m0 20v-2" />
+            </svg>
+            ML Features
+          </a>
+          <a href="{{ url_for('threat.threat_details_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            Threat Details
+          </a>
+          <a href="{{ url_for('model.model_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 16v-2m8-6h2M2 12H4m14.828-5.172l1.414 1.414M4.757 19.243l1.414-1.414M19.243 19.243l-1.414-1.414M4.757 4.757L6.172 6.17M9 12a3 3 0 006 0 3 3 0 00-6 0z"/>
+            </svg>
+            Model
+          </a>
+          <a href="{{ url_for('monitoring.monitoring_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 014-4h3m-7 6v2m0 0a2 2 0 01-2 2H6a2 2 0 01-2-2v-2a2 2 0 012-2h1m6-6V7a2 2 0 012-2h2a2 2 0 012 2v2"/>
+            </svg>
+            Monitoring
+          </a>
+          <a href="{{ url_for('blog.blog_page') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h7l2 2h5a2 2 0 012 2v12a2 2 0 01-2 2z"/>
+            </svg>
+            Blog
+          </a>
+        </div>
+        <div class="px-4 pb-4">
+          <a href="{{ url_for('index') }}" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white rounded-lg">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Return to Home
+          </a>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-auto relative">
+      <svg class="curved-bg" viewBox="0 0 1440 320">
+        <path fill="rgba(59, 130, 246, 0.1)" d="M0,160L48,138.7C96,117,192,75,288,69.3C384,64,480,96,576,122.7C672,149,768,171,864,160C960,149,1056,107,1152,85.3C1248,64,1344,64,1392,64L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+      </svg>
+
+      <!-- Header -->
+      <header class="bg-dark border-b border-gray-800 p-4">
+        <div class="flex justify-between items-center">
+          <h1 class="text-2xl font-semibold">User Dashboard</h1>
+          <div class="flex items-center space-x-4">
+            <span id="user-risk-score" class="px-3 py-1 rounded-full bg-gray-700 text-sm counter skeleton">Risk Score: --</span>
+            <div class="relative" x-data="{ open: false }" @click.away="open = false">
+              <button @click="open = !open" class="relative flex items-center space-x-2 focus:outline-none">
+                <svg class="w-5 h-5 text-gray-300 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+                <span id="notification-count" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center skeleton">0</span>
+              </button>
+              <div x-show="open" x-transition class="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg py-1 z-50">
+                <div class="px-4 py-2 text-sm text-gray-700 font-semibold">Notifications</div>
+                <div id="notification-messages" class="max-h-48 overflow-y-auto">
+                  <div class="px-4 py-2 text-sm text-gray-700 skeleton">Loading notifications...</div>
+                </div>
+                <div class="border-t border-gray-100"></div>
+                <a href="{{ url_for('alerts.user_security_alerts') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">View All Notifications</a>
+              </div>
+            </div>
+            <button id="refresh-data" class="bg-primary hover:bg-blue-600 px-4 py-2 rounded-md text-sm font-medium flex items-center transition hover:scale-105">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span id="refresh-text">Refresh</span>
+            </button>
+            <div class="relative" x-data="{ open: false }" @click.away="open = false">
+              <button @click="open = !open" class="flex items-center space-x-2 focus:outline-none">
+                <img src="{{ current_user.avatar_url or url_for('static', filename='images/user-avatar.png') }}" alt="User Avatar" class="w-8 h-8 rounded-full">
+                <span class="text-gray-300 hover:text-white">{{ current_user.username }}</span>
+              </button>
+              <div x-show="open" x-transition class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('admin_dashboard.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Dashboard</a>
+                {% else %}
+                <a href="{{ url_for('user_dashboard.user_dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Dashboard</a>
+                {% endif %}
+                <a href="{{ url_for('user_profile.profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</a>
+                <div class="border-t border-gray-100"></div>
+                <a href="{{ url_for('pricing.get_user_subscription', user_id=current_user.id) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Subscription</a>
+                <a href="{{ url_for('auth.logout') }}" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Logout</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Dashboard Widgets -->
+      <main class="p-6 space-y-6">
+        <!-- Recent Scan Results -->
+        <div class="widget bg-gray-800 p-6 rounded-lg shadow">
+          <h3 class="text-lg font-semibold mb-4">Recent Scan Results</h3>
+          <div id="recent-scans" class="space-y-3 max-h-60 overflow-y-auto">
+            <div class="text-sm text-gray-400 skeleton">Loading scan results...</div>
+          </div>
+        </div>
+
+        <!-- System Health Overview -->
+        <div class="widget bg-gray-800 p-6 rounded-lg shadow">
+          <h3 class="text-lg font-semibold mb-4">System Health</h3>
+          <div class="space-y-4">
+            <div>
+              <div class="flex justify-between text-sm text-gray-400">
+                <span>CPU Usage</span>
+                <span id="cpu-usage" class="w-12 h-4 rounded skeleton"></span>
+              </div>
+              <div class="w-full bg-gray-700 rounded-full h-2.5 mt-2">
+                <div id="cpu-progress" class="progress-bar bg-blue-500 h-2.5 rounded-full" style="width: 0%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm text-gray-400">
+                <span>Memory Usage</span>
+                <span id="memory-usage" class="w-12 h-4 rounded skeleton"></span>
+              </div>
+              <div class="w-full bg-gray-700 rounded-full h-2.5 mt-2">
+                <div id="memory-progress" class="progress-bar bg-yellow-500 h-2.5 rounded-full" style="width: 0%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm text-gray-400">
+                <span>Disk Usage</span>
+                <span id="disk-usage" class="w-12 h-4 rounded skeleton"></span>
+              </div>
+              <div class="w-full bg-gray-700 rounded-full h-2.5 mt-2">
+                <div id="disk-progress" class="progress-bar bg-green-500 h-2.5 rounded-full" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enhanced Threat Summary and Severity Breakdown -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="widget enhanced-card">
+            <h3 class="chart-title">Threat Summary</h3>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="threat-metric text-center">
+                <p class="text-sm text-gray-400 mb-2">Today</p>
+                <h2 id="threats-today" class="text-2xl font-bold text-red-500 w-12 h-6 mx-auto rounded skeleton">0</h2>
+              </div>
+              <div class="threat-metric text-center">
+                <p class="text-sm text-gray-400 mb-2">This Week</p>
+                <h2 id="threats-week" class="text-2xl font-bold text-red-500 w-12 h-6 mx-auto rounded skeleton">0</h2>
+              </div>
+              <div class="threat-metric text-center">
+                <p class="text-sm text-gray-400 mb-2">This Month</p>
+                <h2 id="threats-month" class="text-2xl font-bold text-red-500 w-12 h-6 mx-auto rounded skeleton">0</h2>
+              </div>
+            </div>
+          </div>
+          <div class="widget enhanced-card chart-container">
+            <h3 class="chart-title">Threat Severity Breakdown</h3>
+            <canvas id="severityChart" class="w-full h-full"></canvas>
+          </div>
+        </div>
+
+        <!-- Enhanced Top Threat Types and Security Metrics -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="widget enhanced-card chart-container">
+            <h3 class="chart-title">Top Threat Types</h3>
+            <canvas id="threatTypeChart" class="w-full h-full"></canvas>
+          </div>
+          <div class="widget enhanced-card chart-container">
+            <h3 class="chart-title">Security Metrics</h3>
+            <canvas id="securityMetricsChart" class="w-full h-full"></canvas>
+          </div>
+        </div>
+
+        <!-- Enhanced Risk Score Breakdown and Threat Trend -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="widget enhanced-card gauge-container">
+            <h3 class="chart-title">Risk Score Breakdown</h3>
+            <canvas id="riskScoreChart" class="w-full h-full"></canvas>
+            <div class="chart-legend text-center text-gray-400 mt-2">Network | Application | User Behavior | System</div>
+          </div>
+          <div class="widget enhanced-card chart-container">
+            <h3 class="chart-title">Threat Trend</h3>
+            <canvas id="threatTrendChart" class="w-full h-full"></canvas>
+          </div>
+        </div>
+
+        <!-- Network Activity -->
+        <div class="widget enhanced-card chart-container">
+          <h3 class="chart-title">Network Activity</h3>
+          <canvas id="networkActivityChart" class="w-full h-full"></canvas>
+        </div>
+
+        <!-- Access Requests -->
+        <div class="widget bg-gray-800 p-6 rounded-lg shadow">
+          <h3 class="text-lg font-semibold mb-4">Access Requests</h3>
+          <div id="access-requests" class="space-y-3 max-h-60 overflow-y-auto">
+            <div class="text-sm text-gray-400 skeleton">Loading access requests...</div>
+          </div>
+        </div>
+
+        <!-- Recent Threat Timeline -->
+        <div class="widget bg-gray-800 p-6 rounded-lg shadow">
+          <h3 class="text-lg font-semibold mb-4">Recent Threat Timeline</h3>
+          <div class="timeline-container" id="threat-timeline">
+            <div class="text-sm text-gray-400 skeleton">Loading threat timeline...</div>
+          </div>
+        </div>
+
+        <!-- Quick Alerts and Security Tips -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="widget bg-gray-800 p-6 rounded-lg shadow">
+            <h3 class="text-lg font-semibold mb-4">Quick Alert Highlights</h3>
+            <div id="alert-highlights" class="space-y-3">
+              <div class="text-sm text-gray-400 skeleton">Loading alerts...</div>
+            </div>
+          </div>
+          <div class="widget bg-gray-800 p-6 rounded-lg shadow">
+            <h3 class="text-lg font-semibold mb-4">Security Tips</h3>
+            <div id="security-tips" class="relative h-24">
+              <div class="tip-card absolute w-full text-gray-300 skeleton">Loading security tips...</div>
+            </div>
+            <div class="flex justify-between mt-4">
+              <button id="prev-tip" class="text-gray-400 hover:text-white disabled:opacity-50" disabled>← Previous</button>
+              <button id="next-tip" class="text-gray-400 hover:text-white disabled:opacity-50">Next →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activities and Login Log -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="widget bg-gray-800 p-6 rounded-lg shadow max-h-60 overflow-y-auto">
+            <h3 class="text-lg font-semibold mb-4">Recent Activities</h3>
+            <div id="activity-log" class="space-y-3">
+              <div class="text-sm text-gray-400 skeleton">Loading activities...</div>
+            </div>
+          </div>
+          <div class="widget bg-gray-800 p-6 rounded-lg shadow overflow-x-auto max-h-60">
+            <h3 class="text-lg font-semibold mb-4">Login & Access Log</h3>
+            <table class="w-full text-sm text-gray-300">
+              <thead>
+                <tr class="border-b border-gray-700">
+                  <th class="py-2 text-left">Time</th>
+                  <th class="py-2 text-left">IP Address</th>
+                  <th class="py-2 text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody id="login-log">
+                <tr><td class="py-2 skeleton" colspan="3">Loading login logs...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Notifications Panel -->
+        <div class="widget bg-gray-800 p-6 rounded-lg shadow">
+          <h3 class="text-lg font-semibold mb-4">Notifications</h3>
+          <div id="notifications" class="space-y-3">
+            <div class="text-sm text-gray-400 skeleton">Loading notifications...</div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Script for Interactivity -->
+  <script>
+    const DASHBOARD_API = "{{ url_for('user_dashboard.dashboard_data') }}";
+    const ACCESS_REQUEST_ALLOW_API_TEMPLATE = "{{ url_for('user_dashboard.allow_access_request', request_id='REQUEST_ID') }}";
+    const ACCESS_REQUEST_DENY_API_TEMPLATE = "{{ url_for('user_dashboard.deny_access_request', request_id='REQUEST_ID') }}";
+
+    let severityChartInstance = null;
+    let threatTrendChartInstance = null;
+    let threatTypeChartInstance = null;
+    let securityMetricsChartInstance = null;
+    let riskScoreChartInstance = null;
+    let networkActivityChartInstance = null;
+
+    let securityTips = [];
+    let currentTipIndex = 0;
+
+    function initializeCharts() {
+      const severityCtx = document.getElementById('severityChart').getContext('2d');
+      severityChartInstance = new Chart(severityCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Critical', 'High', 'Medium', 'Low'],
+          datasets: [{
+            label: 'Threat Severity',
+            data: [0, 0, 0, 0],
+            backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'],
+            borderColor: ['#dc2626', '#d97706', '#2563eb', '#059669'],
+            borderWidth: 2,
+            hoverOffset: 30
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { 
+              position: 'bottom', 
+              labels: { 
+                color: '#e5e7eb', 
+                font: { size: 12, weight: '500' },
+                padding: 20
+              } 
+            },
+            tooltip: { 
+              backgroundColor: 'rgba(31, 41, 55, 0.9)', 
+              titleColor: '#ffffff', 
+              bodyColor: '#e5e7eb',
+              borderColor: '#3B82F6',
+              borderWidth: 1,
+              callbacks: {
+                label: function(context) {
+                  return `${context.label}: ${context.raw} threats`;
+                }
+              }
+            }
+          },
+          animation: {
+            animateScale: true,
+            animateRotate: true,
+            duration: 1500,
+            easing: 'easeOutQuart'
+          },
+          cutout: '60%'
+        }
+      });
+
+      const trendCtx = document.getElementById('threatTrendChart').getContext('2d');
+      threatTrendChartInstance = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Threat Trend',
+            data: [],
+            fill: true,
+            borderColor: '#3B82F6',
+            backgroundColor: 'rgba(59, 130, 246, 0.3)',
+            tension: 0.4,
+            pointRadius: 5,
+            pointHoverRadius: 8,
+            pointBackgroundColor: '#ffffff',
+            pointBorderColor: '#3B82F6',
+            pointBorderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { 
+              beginAtZero: true, 
+              grid: { color: 'rgba(255,255,255,0.1)' },
+              ticks: { 
+                color: '#e5e7eb', 
+                stepSize: 1,
+                font: { size: 12 }
+              }
+            },
+            x: { 
+              grid: { display: false },
+              ticks: { 
+                color: '#e5e7eb', 
+                maxRotation: 45, 
+                minRotation: 45,
+                font: { size: 12 }
+              }
+            }
+          },
+          plugins: {
+            legend: { 
+              labels: { 
+                color: '#e5e7eb', 
+                font: { size: 12, weight: '500' }
+              } 
+            },
+            tooltip: { 
+              backgroundColor: 'rgba(31, 41, 55, 0.9)', 
+              titleColor: '#ffffff', 
+              bodyColor: '#e5e7eb',
+              borderColor: '#3B82F6',
+              borderWidth: 1,
+              callbacks: {
+                label: function(context) {
+                  return `${context.dataset.label}: ${context.raw} threats`;
+                }
+              }
+            }
+          },
+          animation: {
+            duration: 2000,
+            easing: 'easeOutQuart'
+          }
+        }
+      });
+
+      const threatTypeCtx = document.getElementById('threatTypeChart').getContext('2d');
+      threatTypeChartInstance = new Chart(threatTypeCtx, {
+        type: 'bar',
+        data: {
+          labels: ['Malware', 'Phishing', 'DDoS', 'SQL Injection', 'Brute Force'],
+          datasets: [{
+            label: 'Threat Count',
+            data: [0, 0, 0, 0, 0],
+            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+            borderColor: ['#2563eb', '#059669', '#d97706', '#dc2626', '#7c3aed'],
+            borderWidth: 1,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { 
+              beginAtZero: true, 
+              grid: { color: 'rgba(255,255,255,0.1)' },
+              ticks: { 
+                color: '#e5e7eb', 
+                stepSize: 1,
+                font: { size: 12 }
+              }
+            },
+            x: { 
+              grid: { display: false },
+              ticks: { 
+                color: '#e5e7eb', 
+                maxRotation: 45, 
+                minRotation: 45,
+                font: { size: 12 }
+              }
+            }
+          },
+          plugins: {
+            legend: { 
+              labels: { 
+                color: '#e5e7eb', 
+                font: { size: 12, weight: '500' }
+              } 
+            },
+            tooltip: { 
+              backgroundColor: 'rgba(31, 41, 55, 0.9)', 
+              titleColor: '#ffffff', 
+              bodyColor: '#e5e7eb',
+              borderColor: '#3B82F6',
+              borderWidth: 1,
+              callbacks: {
+                label: function(context) {
+                  return `${context.label}: ${context.raw} incidents`;
+                }
+              }
+            }
+          },
+          animation: {
+            duration: 1500,
+            easing: 'easeOutQuart'
+          }
+        }
+      });
+
+      const securityMetricsCtx = document.getElementById('securityMetricsChart').getContext('2d');
+      securityMetricsChartInstance = new Chart(securityMetricsCtx, {
+        type: 'radar',
+        data: {
+          labels: ['Firewall', 'Intrusion', 'Patch Compliance', 'Encryption', 'Authentication'],
+          datasets: [{
+            label: 'Security Metrics',
+            data: [0, 0, 0, 0, 0],
+            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+            borderColor: '#3B82F6',
+            pointBackgroundColor: '#3B82F6',
+            pointBorderColor: '#ffffff',
+            pointHoverBackgroundColor: '#ffffff',
+            pointHoverBorderColor: '#3B82F6'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              beginAtZero: true,
+              max: 100,
+              ticks: { 
+                color: '#e5e7eb', 
+                backdropColor: 'transparent', 
+                stepSize: 20,
+                font: { size: 12 }
+              },
+              grid: { color: 'rgba(255,255,255,0.1)' },
+              angleLines: { color: 'rgba(255,255,255,0.1)' }
+            }
+          },
+          plugins: {
+            legend: { 
+              labels: { 
+                color: '#e5e7eb', 
+                font: { size: 12, weight: '500' }
+              } 
+            },
+            tooltip: { 
+              backgroundColor: 'rgba(31, 41, 55, 0.9)', 
+              titleColor: '#ffffff', 
+              bodyColor: '#e5e7eb',
+              borderColor: '#3B82F6',
+              borderWidth: 1,
+              callbacks: {
+                label: function(context) {
+                  return `${context.label}: ${context.raw}%`;
+                }
+              }
+            }
+          },
+          animation: {
+            duration: 2000,
+            easing: 'easeOutQuart'
+          }
+        }
+      });
+
+      const riskScoreCtx = document.getElementById('riskScoreChart').getContext('2d');
+      riskScoreChartInstance = new Chart(riskScoreCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Network', 'Application', 'User Behavior', 'System'],
+          datasets: [{
+            label: 'Risk Score Breakdown',
+            data: [0, 0, 0, 0],
+            backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'],
+            borderColor: ['#dc2626', '#d97706', '#2563eb', '#059669'],
+            borderWidth: 2,
+            hoverOffset: 30
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { 
+              position: 'bottom', 
+              labels: { 
+                color: '#e5e7eb', 
+                font: { size: 12, weight: '500' },
+                padding: 20
+              } 
+            },
+            tooltip: {
+              backgroundColor: 'rgba(31, 41, 55, 0.9)',
+              titleColor: '#ffffff',
+              bodyColor: '#e5e7eb',
+              borderColor: '#3B82F6',
+              borderWidth: 1,
+              callbacks: {
+                label: function(context) {
+                  return `${context.label}: ${context.raw}%`;
+                }
+              }
+            }
+          },
+          animation: {
+            animateScale: true,
+            animateRotate: true,
+            duration: 1500,
+            easing: 'easeOutQuart'
+          },
+          cutout: '60%'
+        }
+      });
+
+      const networkActivityCtx = document.getElementById('networkActivityChart').getContext('2d');
+      networkActivityChartInstance = new Chart(networkActivityCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Bytes Sent',
+              data: [],
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.3)',
+              fill: true,
+              tension: 0.4,
+              pointRadius: 5,
+              pointHoverRadius: 8,
+              pointBackgroundColor: '#ffffff',
+              pointBorderColor: '#10b981'
+            },
+            {
+              label: 'Bytes Received',
+              data: [],
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.3)',
+              fill: true,
+              tension: 0.4,
+              pointRadius: 5,
+              pointHoverRadius: 8,
+              pointBackgroundColor: '#ffffff',
+              pointBorderColor: '#3b82f6'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { 
+              beginAtZero: true, 
+              grid: { color: 'rgba(255,255,255,0.1)' },
+              ticks: { 
+                color: '#e5e7eb', 
+                stepSize: 100,
+                font: { size: 12 }
+              }
+            },
+            x: { 
+              grid: { display: false },
+              ticks: { 
+                color: '#e5e7eb', 
+                maxRotation: 45, 
+                minRotation: 45,
+                font: { size: 12 }
+              }
+            }
+          },
+          plugins: {
+            legend: { 
+              labels: { 
+                color: '#e5e7eb', 
+                font: { size: 12, weight: '500' }
+              } 
+            },
+            tooltip: { 
+              backgroundColor: 'rgba(31, 41, 55, 0.9)', 
+              titleColor: '#ffffff', 
+              bodyColor: '#e5e7eb',
+              borderColor: '#3B82F6',
+              borderWidth: 1,
+              callbacks: {
+                label: function(context) {
+                  return `${context.dataset.label}: ${context.raw} MB`;
+                }
+              }
+            }
+          },
+          animation: {
+            duration: 2000,
+            easing: 'easeOutQuart'
+          }
+        }
+      });
+    }
+
+    function updateCharts(data) {
+      if (severityChartInstance && data.security?.severity) {
+        severityChartInstance.data.datasets[0].data = [
+          data.security.severity.critical || 0,
+          data.security.severity.high || 0,
+          data.security.severity.medium || 0,
+          data.security.severity.low || 0,
+        ];
+        severityChartInstance.update();
+      }
+
+      if (threatTrendChartInstance && data.threat_trend) {
+        threatTrendChartInstance.data.labels = data.threat_trend.map(t => t.date || 'Unknown');
+        threatTrendChartInstance.data.datasets[0].data = data.threat_trend.map(t => t.count || 0);
+        threatTrendChartInstance.update();
+      }
+
+      if (threatTypeChartInstance && data.threat_types) {
+        threatTypeChartInstance.data.datasets[0].data = [
+          data.threat_types.malware || 0,
+          data.threat_types.phishing || 0,
+          data.threat_types.ddos || 0,
+          data.threat_types.sql_injection || 0,
+          data.threat_types.brute_force || 0
+        ];
+        threatTypeChartInstance.update();
+      }
+
+      if (securityMetricsChartInstance && data.security_metrics) {
+        securityMetricsChartInstance.data.datasets[0].data = [
+          data.security_metrics.firewall || 0,
+          data.security_metrics.intrusion || 0,
+          data.security_metrics.patch_compliance || 0,
+          data.security_metrics.encryption || 0,
+          data.security_metrics.authentication || 0
+        ];
+        securityMetricsChartInstance.update();
+      }
+
+      if (riskScoreChartInstance && data.risk_score_breakdown) {
+        riskScoreChartInstance.data.datasets[0].data = [
+          data.risk_score_breakdown.network || 0,
+          data.risk_score_breakdown.application || 0,
+          data.risk_score_breakdown.user_behavior || 0,
+          data.risk_score_breakdown.system || 0
+        ];
+        riskScoreChartInstance.update();
+      }
+
+      if (networkActivityChartInstance && data.network_activity) {
+        networkActivityChartInstance.data.labels = data.network_activity.map(n => n.time || 'Unknown');
+        networkActivityChartInstance.data.datasets[0].data = data.network_activity.map(n => n.bytes_sent || 0);
+        networkActivityChartInstance.data.datasets[1].data = data.network_activity.map(n => n.bytes_received || 0);
+        networkActivityChartInstance.update();
+      }
+    }
+
+    function updateRecentScans(data) {
+      const scansContainer = document.getElementById('recent-scans');
+      scansContainer.classList.remove('skeleton');
+      if (data.recent_scans && data.recent_scans.length > 0) {
+        scansContainer.innerHTML = data.recent_scans.map(scan => `
+          <div class="scan-result-card bg-gray-700 p-4 rounded-lg threat-${(scan.severity || 'unknown').toLowerCase()}">
+            <p class="text-sm font-semibold text-white">[${(scan.severity || 'Unknown').toUpperCase()}] ${scan.scan_type || 'Unknown'}</p>
+            <p class="text-xs text-gray-400">${scan.created_at || 'Unknown'}</p>
+            <p class="text-sm text-gray-300">${scan.details?.description || 'No description'}</p>
+            ${scan.details?.ip_address || scan.details?.port || scan.details?.protocol ? `
+              <p class="text-sm text-gray-300">Details: IP: ${scan.details?.ip_address || 'N/A'}, Port: ${scan.details?.port || 'N/A'}, Protocol: ${scan.details?.protocol || 'N/A'}</p>
+            ` : ''}
+            ${scan.details?.threat_detected ? `
+              <p class="text-sm text-red-400">Threat Detected: Confidence ${(scan.details.confidence || 0).toFixed(2)}</p>
+            ` : ''}
+            ${scan.details?.json_detections && scan.details.json_detections.length > 0 ? `
+              <p class="text-sm text-gray-300">JSON Detections:</p>
+              <ul class="list-disc list-inside text-sm text-gray-400">
+                ${scan.details.json_detections.map(d => `
+                  <li class="threat-${(d.severity || 'unknown').toLowerCase()}">[${(d.severity || 'Unknown').toUpperCase()}] ${d.details || 'No details'} 
+                    (IP: ${d.ip_address || 'N/A'}, Port: ${d.port || 'N/A'}, Protocol: ${d.protocol || 'N/A'})
+                  </li>
+                `).join('')}
+              </ul>
+            ` : ''}
+            ${scan.details?.recommendations && scan.details.recommendations.length > 0 ? `
+              <p class="text-sm text-gray-300">Recommendations:</p>
+              <ul class="list-disc list-inside text-sm text-gray-400">
+                ${scan.details.recommendations.map(r => `<li>${r}</li>`).join('')}
+              </ul>
+            ` : ''}
+          </div>
+        `).join('');
+      } else {
+        scansContainer.innerHTML = '<div class="text-sm text-gray-400">No recent scan results</div>';
+      }
+    }
+
+    function updateNotifications(data) {
+      const notificationMessages = document.getElementById('notification-messages');
+      const notificationCount = document.getElementById('notification-count');
+      notificationMessages.classList.remove('skeleton');
+      notificationCount.classList.remove('skeleton');
+      if (data.notifications && data.notifications.length > 0) {
+        notificationCount.textContent = data.notifications.length;
+        notificationMessages.innerHTML = data.notifications.map(notification => `
+          <div class="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
+            <p class="font-semibold">${notification.title || 'Untitled'}</p>
+            <p>${notification.message || 'No message'}</p>
+            <p class="text-xs text-gray-500">${notification.timestamp || 'Unknown time'}</p>
+          </div>
+        `).join('');
+      } else {
+        notificationCount.textContent = '0';
+        notificationMessages.innerHTML = '<div class="px-4 py-2 text-sm text-gray-700">No new notifications</div>';
+      }
+    }
+
+    function updateThreatTimeline(data) {
+      const timelineContainer = document.getElementById('threat-timeline');
+      timelineContainer.classList.remove('skeleton');
+      if (data.threat_timeline && data.threat_timeline.length > 0) {
+        timelineContainer.innerHTML = data.threat_timeline.map(event => `
+          <div class="timeline-item bg-gray-700 p-4 rounded-lg threat-${(event.severity || 'unknown').toLowerCase()}">
+            <p class="text-sm font-semibold text-white">[${(event.severity || 'Unknown').toUpperCase()}] ${event.name || event.type || 'Unknown'}</p>
+            <p class="text-xs text-gray-400">${event.timestamp || 'Unknown'}</p>
+            <p class="text-sm text-gray-300">${event.description || 'No description'}</p>
+            <p class="text-sm text-gray-300">Details: IP: ${event.ip_address || 'N/A'}, Port: ${event.port || 'N/A'}, Protocol: ${event.protocol || 'N/A'}</p>
+          </div>
+        `).join('');
+      } else {
+        timelineContainer.innerHTML = '<div class="text-sm text-gray-400">No recent threats detected</div>';
+      }
+    }
+
+    function updateAccessRequests(data) {
+      const accessRequestsContainer = document.getElementById('access-requests');
+      accessRequestsContainer.classList.remove('skeleton');
+      if (data.access_requests && data.access_requests.length > 0) {
+        accessRequestsContainer.innerHTML = data.access_requests.map(request => `
+          <div class="access-request bg-gray-700 p-4 rounded-lg flex justify-between items-center" data-request-id="${request.id || 'unknown'}">
+            <div>
+              <p class="text-sm font-semibold text-white">${request.device || 'Unknown Device'}</p>
+              <p class="text-xs text-gray-400">IP: ${request.ip_address || 'Unknown'}</p>
+              <p class="text-xs text-gray-400">${request.timestamp || 'Unknown'}</p>
+              <p class="text-sm text-gray-300">${request.description || 'No description'}</p>
+            </div>
+            <div class="flex space-x-2">
+              <button onclick="handleAccessRequest('${request.id || 'unknown'}', 'allow')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md text-sm">Allow</button>
+              <button onclick="handleAccessRequest('${request.id || 'unknown'}', 'deny')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm">Deny</button>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        accessRequestsContainer.innerHTML = '<div class="text-sm text-gray-400">No pending access requests</div>';
+      }
+    }
+
+    function updateSecurityTips(data) {
+      const tipsContainer = document.getElementById('security-tips');
+      const prevTipBtn = document.getElementById('prev-tip');
+      const nextTipBtn = document.getElementById('next-tip');
+      tipsContainer.classList.remove('skeleton');
+
+      securityTips = data.security_tips || [
+        'Use strong, unique passwords for each account.',
+        'Enable two-factor authentication (2FA) wherever possible.',
+        'Regularly update your software to patch vulnerabilities.',
+        'Be cautious of phishing emails and suspicious links.'
+      ];
+
+      if (securityTips.length > 0) {
+        currentTipIndex = 0;
+        tipsContainer.innerHTML = `<div class="tip-card absolute w-full text-gray-300">${securityTips[currentTipIndex]}</div>`;
+        prevTipBtn.disabled = true;
+        nextTipBtn.disabled = securityTips.length <= 1;
+      } else {
+        tipsContainer.innerHTML = '<div class="text-sm text-gray-400">No security tips available</div>';
+        prevTipBtn.disabled = true;
+        nextTipBtn.disabled = true;
+      }
+    }
+
+    document.getElementById('prev-tip').addEventListener('click', () => {
+      if (currentTipIndex > 0) {
+        currentTipIndex--;
+        document.querySelector('.tip-card').textContent = securityTips[currentTipIndex];
+        document.getElementById('next-tip').disabled = false;
+        document.getElementById('prev-tip').disabled = currentTipIndex === 0;
+      }
+    });
+
+    document.getElementById('next-tip').addEventListener('click', () => {
+      if (currentTipIndex < securityTips.length - 1) {
+        currentTipIndex++;
+        document.querySelector('.tip-card').textContent = securityTips[currentTipIndex];
+        document.getElementById('prev-tip').disabled = false;
+        document.getElementById('next-tip').disabled = currentTipIndex === securityTips.length - 1;
+      }
+    });
+
+    function updateRecentActivities(data) {
+      const activityLog = document.getElementById('activity-log');
+      activityLog.classList.remove('skeleton');
+      if (data.recent_alerts && data.recent_alerts.length > 0) {
+        activityLog.innerHTML = data.recent_alerts.map(activity => `
+          <div class="text-sm text-gray-300">
+            <p class="font-semibold">${activity.title || 'Unknown Action'}</p>
+            <p class="text-xs text-gray-400">${activity.created_at || 'Unknown'}</p>
+            <p>${activity.message || 'No details'}</p>
+          </div>
+        `).join('');
+      } else {
+        activityLog.innerHTML = '<div class="text-sm text-gray-400">No recent activities</div>';
+      }
+    }
+
+    function updateLoginLog(data) {
+      const loginLog = document.getElementById('login-log');
+      loginLog.classList.remove('skeleton');
+      if (data.login_log && data.login_log.length > 0) {
+        loginLog.innerHTML = data.login_log.map(log => `
+          <tr>
+            <td class="py-2">${log.time || 'Unknown'}</td>
+            <td class="py-2">${log.ip || 'Unknown'}</td>
+            <td class="py-2">${log.status || 'Unknown'}</td>
+          </tr>
+        `).join('');
+      } else {
+        loginLog.innerHTML = '<tr><td class="py-2" colspan="3">No login logs available</td></tr>';
+      }
+    }
+
+    function updateQuickAlerts(data) {
+      const alertHighlights = document.getElementById('alert-highlights');
+      alertHighlights.classList.remove('skeleton');
+      if (data.recent_alerts && data.recent_alerts.length > 0) {
+        alertHighlights.innerHTML = data.recent_alerts.map(alert => `
+          <div class="alert-card bg-gray-700 p-4 rounded-lg">
+            <p class="text-sm font-semibold text-white">${alert.title || 'Untitled'}</p>
+            <p class="text-xs text-gray-400">${alert.created_at || 'Unknown'}</p>
+            <p class="text-sm text-gray-300">${alert.message || 'No description'}</p>
+          </div>
+        `).join('');
+      } else {
+        alertHighlights.innerHTML = '<div class="text-sm text-gray-400">No recent alerts</div>';
+      }
+    }
+
+    async function handleAccessRequest(requestId, action) {
+      let url = '';
+      if (action === 'allow') {
+        url = ACCESS_REQUEST_ALLOW_API_TEMPLATE.replace('REQUEST_ID', requestId);
+      } else if (action === 'deny') {
+        url = ACCESS_REQUEST_DENY_API_TEMPLATE.replace('REQUEST_ID', requestId);
+      } else {
+        alert('Invalid action');
+        return;
+      }
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include'
+        });
+        if (!response.ok) throw new Error('Failed to process access request');
+        const result = await response.json();
+        alert(`Access request ${action}ed successfully`);
+        const requestElement = document.querySelector(`[data-request-id="${requestId}"]`);
+        if (requestElement) requestElement.remove();
+        fetchDashboardData();
+      } catch (error) {
+        console.error(`Failed to handle access request (ID: ${requestId}):`, error);
+        alert(`Error processing access request: ${error.message}`);
+      }
+    }
+
+    function updateDashboard(data) {
+      const elements = [
+        'cpu-usage', 'cpu-progress', 'memory-usage', 'memory-progress',
+        'disk-usage', 'disk-progress', 'threats-today', 'threats-week',
+        'threats-month', 'user-risk-score', 'notifications'
+      ];
+      elements.forEach(el => {
+        const element = document.getElementById(el);
+        if (element) element.classList.remove('skeleton');
+      });
+
+      document.getElementById('cpu-usage').innerText = `${data.system?.cpu || 0}%`;
+      document.getElementById('cpu-progress').style.width = `${data.system?.cpu || 0}%`;
+
+      document.getElementById('memory-usage').innerText = `${data.system?.memory || 0}%`;
+      document.getElementById('memory-progress').style.width = `${data.system?.memory || 0}%`;
+
+      document.getElementById('disk-usage').innerText = `${data.system?.disk || 0}%`;
+      document.getElementById('disk-progress').style.width = `${data.system?.disk || 0}%`;
+
+      document.getElementById('threats-today').innerText = data.security?.active_threats?.today || 0;
+      document.getElementById('threats-week').innerText = data.security?.active_threats?.week || 0;
+      document.getElementById('threats-month').innerText = data.security?.active_threats?.month || 0;
+
+      document.getElementById('user-risk-score').innerText = `Risk Score: ${data.security?.risk_score || '--'}`;
+
+      updateRecentScans(data);
+      updateCharts(data);
+      updateNotifications(data);
+      updateThreatTimeline(data);
+      updateAccessRequests(data);
+      updateSecurityTips(data);
+      updateRecentActivities(data);
+      updateLoginLog(data);
+      updateQuickAlerts(data);
+    }
+
+    function animateWidgets() {
+      document.querySelectorAll('.widget').forEach((widget, index) => {
+        setTimeout(() => {
+          widget.classList.add('visible');
+        }, index * 200);
+      });
+    }
+
+    function showLoadingState() {
+      document.getElementById('refresh-text').innerText = 'Refreshing...';
+      document.getElementById('refresh-data').disabled = true;
+      document.querySelectorAll('.skeleton').forEach(el => {
+        el.style.opacity = '0.7';
+      });
+    }
+
+    function hideLoadingState() {
+      document.getElementById('refresh-text').innerText = 'Refresh';
+      document.getElementById('refresh-data').disabled = false;
+      document.querySelectorAll('.skeleton').forEach(el => {
+        el.style.opacity = '1';
+      });
+    }
+
+    async function fetchDashboardData() {
+      showLoadingState();
+      try {
+        const response = await fetch(DASHBOARD_API, { 
+          credentials: 'include',
+          headers: { 'Accept': 'application/json' }
+        });
+        if (response.status === 429) {
+          alert('Too many requests. Please wait a moment and try again.');
+          return;
+        }
+        if (response.status === 401 || response.status === 403) {
+          alert('Session expired. Please log in again.');
+          window.location.href = "{{ url_for('auth.login') }}";
+          return;
+        }
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`Failed to load dashboard data: ${errorData.error || response.statusText}\nRequest ID: ${errorData.request_id || 'unknown'}`);
+        }
+        const data = await response.json();
+        console.log('Received data:', JSON.stringify(data, null, 2));
+        updateDashboard(data);
+        animateWidgets();
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        alert(error.message);
+      } finally {
+        hideLoadingState();
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initializeCharts();
+      fetchDashboardData();
+      document.getElementById('refresh-data').addEventListener('click', fetchDashboardData);
+      setInterval(fetchDashboardData, 30000);
+    });
+  </script>
+</body>
+</html>
